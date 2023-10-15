@@ -1,0 +1,5 @@
+build
+Drivers/CMSIS
+Drivers/STM32G4xx_HAL_Driver
+Middlewares/ST
+Middlewares/Third_Party/FreeRTOS

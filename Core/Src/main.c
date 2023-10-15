@@ -91,8 +91,6 @@ const osThreadAttr_t mainStateLoop_attributes = {
   .stack_size = 128 * 4
 };
 /* USER CODE BEGIN PV */
-uint16_t enc_angle_uint12 = 0;
-int enc_angle_int = 0;
 
 /* USER CODE END PV */
 
@@ -238,17 +236,7 @@ int main(void)
   MX_LPTIM1_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_GPIO_WritePin(ENC_EN_GPIO_Port, ENC_EN_Pin, 1);
-  HAL_Delay(10);
-
-  // Enable interrupts and magnetic encoder
-  enc_angle_int = 0;
-  enc_angle_uint12 = 0;
-  // NVIC_EnableIRQ(EXTI1_IRQn);
-  HAL_GPIO_WritePin(ENC_EN_GPIO_Port, ENC_EN_Pin, 0);
-  HAL_Delay(10);
-  enc_angle_int = -enc_angle_int;
-
+  set_encoder_absolute_offset();
 
   HAL_GPIO_WritePin(INLX_GPIO_Port, INLX_Pin, 1);
 
@@ -1041,17 +1029,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t pin){
   if(pin == IFA_Pin){
-    if(HAL_GPIO_ReadPin(IFB_GPIO_Port, IFB_Pin)){
-      enc_angle_int ++;
-    }else{
-      enc_angle_int --;
-    }
-
-    // if(enc_angle_uint12 == 4096){
-    //   enc_angle_uint12 = 0;
-    // }else if(enc_angle_uint12 > 4096){
-    //   enc_angle_uint12 = 4096;
-    // }
+    encoder_ISR();
   }
 }
 /* USER CODE END 4 */

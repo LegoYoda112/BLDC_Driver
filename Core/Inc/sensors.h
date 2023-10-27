@@ -2,6 +2,7 @@
 #define SENSORS_H
 
 #include "main.h"
+#include "stdbool.h"
 
 #define AMP_GAIN 40.0f
 #define SHUNT_VALUE_R 0.002f
@@ -23,7 +24,7 @@ extern uint16_t enc_angle_uint12;
 void encoder_ISR();
 void set_encoder_absolute_offset();
 void start_ADC_DMA();
-void calib_DRV_amps();
+void calibrate_DRV_amps();
 void update_current_sense();
 
 #endif

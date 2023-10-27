@@ -58,8 +58,6 @@ CORDIC_HandleTypeDef hcordic;
 
 FDCAN_HandleTypeDef hfdcan1;
 
-FMAC_HandleTypeDef hfmac;
-
 I2C_HandleTypeDef hi2c1;
 
 LPTIM_HandleTypeDef hlptim1;
@@ -67,6 +65,7 @@ LPTIM_HandleTypeDef hlptim1;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim6;
+TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim15;
 
 /* Definitions for defaultTask */
@@ -106,9 +105,9 @@ static void MX_I2C1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM15_Init(void);
 static void MX_TIM6_Init(void);
-static void MX_CORDIC_Init(void);
-static void MX_FMAC_Init(void);
 static void MX_LPTIM1_Init(void);
+static void MX_CORDIC_Init(void);
+static void MX_TIM7_Init(void);
 void StartDefaultTask(void *argument);
 void StartStatusBlink(void *argument);
 void StartMainStateLoop(void *argument);
@@ -231,15 +230,12 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM15_Init();
   MX_TIM6_Init();
-  MX_CORDIC_Init();
-  MX_FMAC_Init();
   MX_LPTIM1_Init();
+  MX_CORDIC_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
   set_encoder_absolute_offset();
-
-  HAL_GPIO_WritePin(INLX_GPIO_Port, INLX_Pin, 1);
-
   // START PWM
 
   // Phases
@@ -251,18 +247,18 @@ int main(void)
   HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_2);
 
+  // Start DMA on ADC channels
   start_ADC_DMA();
 
-  // enc_angle_int = enc_angle_int; //TODO: not sure why this is nescasary 
+  // Calibrate DRV amps
+  enable_DRV();
+  calibrate_DRV_amps();
 
-  // Enable DRV
-  HAL_GPIO_WritePin(DRV_EN_GPIO_Port, DRV_EN_Pin, 1);
-  HAL_Delay(1);
-
-  calib_DRV_amps();
-
-  // Start timer
+  // Start FOC timer
   HAL_TIM_Base_Start_IT(&htim6); 
+  
+  HAL_GPIO_WritePin(INLX_GPIO_Port, INLX_Pin, 1);
+  calibrate_encoder_offset(15);
 
   /* USER CODE END 2 */
 
@@ -588,32 +584,6 @@ static void MX_FDCAN1_Init(void)
 }
 
 /**
-  * @brief FMAC Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_FMAC_Init(void)
-{
-
-  /* USER CODE BEGIN FMAC_Init 0 */
-
-  /* USER CODE END FMAC_Init 0 */
-
-  /* USER CODE BEGIN FMAC_Init 1 */
-
-  /* USER CODE END FMAC_Init 1 */
-  hfmac.Instance = FMAC;
-  if (HAL_FMAC_Init(&hfmac) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN FMAC_Init 2 */
-
-  /* USER CODE END FMAC_Init 2 */
-
-}
-
-/**
   * @brief I2C1 Initialization Function
   * @param None
   * @retval None
@@ -808,7 +778,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 96 -1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 199;
+  htim3.Init.Period = 253;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -854,9 +824,9 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 150-1;
+  htim6.Init.Prescaler = 144-1;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 499;
+  htim6.Init.Period = 99;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -871,6 +841,44 @@ static void MX_TIM6_Init(void)
   /* USER CODE BEGIN TIM6_Init 2 */
 
   /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
+  * @brief TIM7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM7_Init(void)
+{
+
+  /* USER CODE BEGIN TIM7_Init 0 */
+
+  /* USER CODE END TIM7_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM7_Init 1 */
+
+  /* USER CODE END TIM7_Init 1 */
+  htim7.Instance = TIM7;
+  htim7.Init.Prescaler = 0;
+  htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim7.Init.Period = 65535;
+  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM7_Init 2 */
+
+  /* USER CODE END TIM7_Init 2 */
 
 }
 
@@ -1019,7 +1027,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(INLX_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 4, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -1072,25 +1080,48 @@ void StartStatusBlink(void *argument)
   float speed = 0.01f;
   for(;;)
   {
-    // HAL_GPIO_TogglePin(LED_R_GPIO_Port, LED_R_Pin);
-    // HAL_GPIO_TogglePin(LED_B_GPIO_Port, LED_B_Pin);
-
-    // set_led_red_pwm(sinf(led_timer * speed + 0*PI/3) * r_scale/1.8 + r_scale/2.0);
-    // set_led_green_pwm(sinf(led_timer * speed + 2*PI/3) * r_scale/1.8 + r_scale/2.0);
-    // set_led_blue_pwm(sinf(led_timer * speed + 4*PI/3) * r_scale/1.8 + r_scale/2.0);
-
-    led_hsv(enc_angle_int / (4096.0f / 360.0f) + 10000.0f, 1.0f, 0.7f);
-
-    osDelay(10);
+    led_hsv(enc_angle_int / (4096.0f / 360.0f) + 10000.0f, 1.0f, 1.0f);
 
     char intStr[20];
-    // sprintf(intStr, "%d %d \r\n", elec_angle, (int)((i/100.0f)/(2.0f*PI) * UINT16_MAX) % UINT16_MAX);
-    sprintf(intStr, "%d %d \r\n", enc_angle_int, (int)(angle/(2.0 * PI) * UINT16_MAX) % UINT16_MAX);
-    // sprintf(intStr, "%d %d \r\n", enc_angle_int, (int)(angle/(2.0 * PI) * UINT16_MAX) % UINT16_MAX);
-
-    // (int) ((angle / (2.0 * PI)) * 4092) % 4092
-
+    sprintf(intStr, "encoder_angle %d \r\n", enc_angle_int);
     CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
+    osDelay(1);
+
+    sprintf(intStr, "electrical_angle %d \r\n", electrical_angle);
+    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
+    osDelay(1);
+
+    sprintf(intStr, "electrical_angle_offset %d \r\n", electrical_angle_offset);
+    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
+    osDelay(1);
+
+    sprintf(intStr, "angle %d \r\n", (int) (angle * 100));
+    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
+    osDelay(1);
+
+    sprintf(intStr, "temp_adc %d \r\n", adc1_dma[1]);
+    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
+    osDelay(1);
+
+    sprintf(intStr, "vmot_adc %d \r\n", adc1_dma[0]);
+    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
+    osDelay(1);
+
+    update_current_sense();
+
+    sprintf(intStr, "adc2_0 %d \r\n", (int)(current_sense[0] * 100));
+    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
+    osDelay(1);
+
+    sprintf(intStr, "adc2_1 %d \r\n", (int)(current_sense[1] * 100));
+    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
+    osDelay(1);
+
+    sprintf(intStr, "adc2_2 %d \r\n", (int)(current_sense[2] * 100));
+    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
+    osDelay(1);
+
+    osDelay(30);
   }
   /* USER CODE END StartStatusBlink */
 }
@@ -1117,9 +1148,10 @@ void StartMainStateLoop(void *argument)
 
   for(;;)
   { 
-
-    osDelay(1);
-    update_current_sense();
+    // target_encoder_value = 4096 * 1;
+    // osDelay(3000);
+    // target_encoder_value = 0;
+    // osDelay(3000);
   }
   /* USER CODE END StartMainStateLoop */
 }

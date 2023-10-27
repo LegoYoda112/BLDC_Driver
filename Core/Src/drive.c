@@ -1,77 +1,115 @@
 #include "drive.h"
-#include "stdbool.h"
-#include "sensors.h"
 
-float power = 10;
+
+float power = 0;
 uint16_t target_elec_angle = 0;
 bool foc_drive_enabled = false;
 
+bool motor_inverted = false;
+bool motor_calibrated = false;
+
 int motor_poles;
 int counts_per_pole;
-int elec_angle;
-int elec_angle_offset;
-uint16_t elec_angle_uint16;
+int target_encoder_value;
 
+uint16_t electrical_angle;
+uint16_t electrical_angle_offset;
+uint16_t encoder_zeros[10];
 
+// Enable DRV chip
+void enable_DRV(){
+    HAL_GPIO_WritePin(DRV_EN_GPIO_Port, DRV_EN_Pin, 1);
+}
 
-void set_phase_A(uint16_t value){
+// Disable DRV chip
+void disable_DRV(){
+    HAL_GPIO_WritePin(DRV_EN_GPIO_Port, DRV_EN_Pin, 0);
+}
+
+// Set phase A PWM strength (8 bit)
+void set_phase_A(uint8_t value){
+    TIM1->CCR3 = value;
+}
+// Set phase B PWM strength (8 bit)
+void set_phase_B(uint8_t value){
     TIM1->CCR2 = value;
 }
 
-void set_phase_B(uint16_t value){
+// Set phase C PWM strength (8 bit)
+void set_phase_C(uint8_t value){
     TIM1->CCR1 = value;
 }
 
-void set_phase_C(uint16_t value){
-    TIM1->CCR3 = value;
-}
+// TODO: Set phase ordering in calibration (should be relative to driver)
+// TODO: Use CORDIC or LUT
 
+// Apply voltage vector at specified electrical angle
 void apply_voltage_at_electrical_angle(float angle, uint8_t power){
-    volatile float A_value = sinf(angle);
-    volatile float B_value = sinf(angle + 2.0f * PI / 3.0f);
-    volatile float C_value = sinf(angle + 4.0f * PI / 3.0f);
+    float shifted_angle = angle + PI/2.0f; // Shift so 0 is aligned with phase A
+    volatile float A_value = sinf(shifted_angle);
+    volatile float B_value = sinf(shifted_angle + 2.0f * PI / 3.0f);
+    volatile float C_value = sinf(shifted_angle + 4.0f * PI / 3.0f);
 
     set_phase_A( power * A_value + power );
     set_phase_B( power * B_value + power );
     set_phase_C( power * C_value + power );
 }
 
-float angle = 0.0;
+void apply_voltage_at_electrical_angle_int(uint8_t angle, uint8_t magnitude){
+    angle = (angle + (1.0 / 4.0) * 256);
+
+    uint8_t A_value = mult_sin_lut_uint8((uint8_t) (angle + (0.0 / 3.0) * 256), magnitude);
+    uint8_t B_value = mult_sin_lut_uint8((uint8_t) (angle + (1.0 / 3.0) * 256), magnitude);
+    uint8_t C_value = mult_sin_lut_uint8((uint8_t) (angle + (2.0 / 3.0) * 256), magnitude);
+
+    set_phase_A(A_value);
+    set_phase_B(B_value);
+    set_phase_C(C_value);
+}
+
+uint8_t angle = 0;
+int max_power = 100;
+
 void foc_interrupt(){
-
-    // calc_elec_angle();
-    // target_elec_angle = elec_angle + UINT16_MAX/2;
-
-
-    elec_angle = (int)((enc_angle_uint12) % (counts_per_pole)) - elec_angle_offset;
-    if(elec_angle > 0){
-        elec_angle_uint16 = elec_angle;
-    }else{
-        elec_angle_uint16 = elec_angle + (counts_per_pole);
-    }
-    elec_angle_uint16 = elec_angle_uint16 * (65536.0 / (counts_per_pole));
-
-
-    // angle = ((float)elec_angle_uint16 / 65536.0) * (PI * 2.0) + PI;
-
-    angle -= 0.02;
-
-    if(angle > 2*PI){
-        angle -= 2*PI;
-    }else if(angle < 0){
-        angle += 2*PI;
-    }
-
+    // HAL_TIM_Base_Start(&htim7);
+    
+    // Run PD loop
+    // TODO: Run this at a slower speed
+    // int power = 0.004f * (target_encoder_value - enc_angle_int);
     if(foc_drive_enabled){
-        // set_phase_B( sinf(i/100.0 + (0 * PI / 3.0f)) * (power/2) + power/2 );
-        // set_phase_A( sinf(i/100.0 + (2 * PI / 3.0f)) * (power/2) + power/2 );
-        // set_phase_C( sinf(i/100.0 + (4 * PI / 3.0f)) * (power/2) + power/2 );
+        // int power = 200;
 
-        // apply_voltage_at_electrical_angle(angle, 5);
-        apply_voltage_at_electrical_angle(angle, 10);
+        int power = 0.1f * (target_encoder_value - enc_angle_int);
+        electrical_angle = ((enc_angle_int - electrical_angle_offset) % 512);
+
+        // angle = ((float)electrical_angle / 512.0f) * (PI * 2.0);
+
+        // Convert electrical angle from uint9 to int8
+        int8_t angle = electrical_angle >> 1;
+
+        // Adjust direction based on power
+        if(power > 0){
+            angle += (1.0/4.0) * 256;
+        }else{
+            angle -= (1.0/4.0) * 256;
+        }
+        power = abs(power);
+
+        // Adjust angle to 
+        // Can probably get away without this now
+
+        // Clamp power
+        if(power > max_power){
+            power = max_power;
+        }
+
+        apply_voltage_at_electrical_angle_int((uint8_t) (angle % 256), power);
+        // apply_voltage_at_electrical_angle(angle, power);
     }
 
-    // target_elec_angle += 100;
+    // HAL_TIM_Base_Stop(&htim7);
+    // volatile uint32_t executionTime = __HAL_TIM_GET_COUNTER(&htim7);
+    // printf("test");
 }
 
 void enable_foc_loop(){
@@ -84,15 +122,15 @@ void disable_foc_loop(){
 
 void step3(int calibration_voltage){
     set_phase_A(calibration_voltage);
-    osDelay(80);
+    HAL_Delay(80);
     set_phase_A(0);
 
     set_phase_B(calibration_voltage);
-    osDelay(80);
+    HAL_Delay(80);
     set_phase_B(0);
 
     set_phase_C(calibration_voltage);
-    osDelay(80);
+    HAL_Delay(80);
     set_phase_C(0);
 }
 
@@ -109,12 +147,44 @@ void spin_once(int calibration_voltage){
     step3(calibration_voltage);
 
     set_phase_A(calibration_voltage);
-    osDelay(80);
+    HAL_Delay(80);
     set_phase_A(0);
+}
+
+void clear_phases(){
+    set_phase_A(0);
+    set_phase_B(0);
+    set_phase_C(0);
+}
+
+void spin_electrical_rads_sin(float revs, int calibration_voltage){
+    for(int i = 0; i<=255; i++){
+        // apply_voltage_at_electrical_angle((i / 100.0f) * rads, calibration_voltage);
+        apply_voltage_at_electrical_angle_int((uint8_t) (int) (i * revs) % 254, calibration_voltage);
+        HAL_Delay(5);
+    }
+}
+
+void spin_electrical_rev_forward(int calibration_voltage){
+    for(int i = 0; i<=255; i++){
+        // apply_voltage_at_electrical_angle((i / 100.0f) * rads, calibration_voltage);
+        apply_voltage_at_electrical_angle_int(i, calibration_voltage);
+        HAL_Delay(5);
+    }
+}
+
+
+void spin_electrical_rev_backward(int calibration_voltage){
+    for(int i = 0; i<=255; i++){
+        // apply_voltage_at_electrical_angle((i / 100.0f) * rads, calibration_voltage);
+        apply_voltage_at_electrical_angle_int(255 - i, calibration_voltage);
+        HAL_Delay(5);
+    }
 }
 
 void calibrate_encoder_offset(int calibration_voltage){
     disable_foc_loop();
+    motor_calibrated = false;
 
     // 24 phase steps takes you around once
     // Encoder is accurate (at least out to 40 rotations)
@@ -122,44 +192,42 @@ void calibrate_encoder_offset(int calibration_voltage){
     // 14 magnets (7 poles)
     // 12 coils
 
-    volatile int start_zero = enc_angle_int;
-    // spin_once(calibration_voltage);
+    // apply_voltage_at_electrical_angle(0.0f, calibration_voltage);
+    // HAL_Delay(80);
+    // int start_enc = enc_angle_int;
 
-    // volatile int end_zero = enc_angle_int;
+    // apply_voltage_at_electrical_angle(0.5f, calibration_voltage);
+    // HAL_Delay(80);
 
-    // set_phase_A(calibration_voltage);
-    // osDelay(80);
-    // set_phase_A(0);
-    
-
-    // set_phase_B(calibration_voltage);
-    // osDelay(80);
-    // set_phase_B(0);
-
-    // set_phase_C(calibration_voltage);
-    // osDelay(80);
-    // set_phase_C(0);
-
-    
-
-    // // volatile int estimated_pole_pairs = abs((int)round((4096 / ((enc_A - enc_C) / 2.0f))/3));
-    // volatile int motor_poles = 14;
-    // counts_per_pole = (4096 / motor_poles);
-
-    // volatile int test = (start_zero - end_zero) / 5;
-    // volatile int test2 = (end_zero + (2 * counts_per_pole));
-
-
-    // volatile int average_zero = ((start_zero + (end_zero - (3 * counts_per_pole))) / 2) % (counts_per_pole / 3);
-    // // volatile int test2 = (int)fmod((start_zero + 4096.0), 4096.0f/(7.0f*3.0f));
-
-    // int offset = average_zero % (counts_per_pole);
-    // if(offset < 0){
-    //     offset += counts_per_pole;
+    // if(enc_angle_int > start_enc){
+    //     motor_inverted = false;
     // }
 
-    // elec_angle_offset = offset;
-    // // elec_angle_offset = 96;
+    // apply_voltage_at_electrical_angle_int(0, calibration_voltage);
+    // HAL_Delay(100);
 
+    // for(int i = 0; i < 5; i++){
+    //     spin_electrical_rev_forward(calibration_voltage);
+    //     encoder_zeros[i] = (enc_angle_int + 4096);
+    // }
+
+    // for(int i = 0; i < 5; i++){
+    //     spin_electrical_rev_backward(calibration_voltage);
+    //     encoder_zeros[i + 5] = (enc_angle_int + 4096);
+    // }
+
+    // clear_phases();
+
+    
+    // // TODO: Make this handle different pole counts
+    // for(int i = 0; i < 10; i++){
+    //     electrical_angle_offset += encoder_zeros[i] % 512;
+    // }
+    // electrical_angle_offset = electrical_angle_offset / 10;
+
+
+    electrical_angle_offset = 157;
+
+    motor_calibrated = true;
     enable_foc_loop();
 }

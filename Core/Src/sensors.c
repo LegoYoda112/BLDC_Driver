@@ -9,8 +9,11 @@ float current_sense[3];
 int enc_angle_int;
 uint16_t enc_angle_uint12;
 
+bool start_up_pulses = false;
+uint16_t start_up_pulse_count = 0;
+
 void encoder_ISR(){
-  if(HAL_GPIO_ReadPin(IFB_GPIO_Port, IFB_Pin)){
+  if(start_up_pulses || HAL_GPIO_ReadPin(IFB_GPIO_Port, IFB_Pin)){
     enc_angle_int ++;
   }else{
     enc_angle_int --;
@@ -18,17 +21,37 @@ void encoder_ISR(){
 }
 
 void set_encoder_absolute_offset(){
-  // Disable magnetic encoder
-  HAL_GPIO_WritePin(ENC_EN_GPIO_Port, ENC_EN_Pin, 1);
-  HAL_Delay(1);
+  // TODO: This is very very hacky and I do not like it
 
+  // GET PULSE COUNT
+  // Disable magnetic encoder
+  start_up_pulses = true;
+  HAL_GPIO_WritePin(ENC_EN_GPIO_Port, ENC_EN_Pin, 1);
+  HAL_Delay(10);
   // Reset angle
   enc_angle_int = 0;
-
   // Enable magnetic encoder
   HAL_GPIO_WritePin(ENC_EN_GPIO_Port, ENC_EN_Pin, 0);
-  HAL_Delay(6);
-  enc_angle_int = -enc_angle_int; // TODO: Not sure why this is needed
+  HAL_Delay(10);
+  start_up_pulse_count = enc_angle_int;
+
+  // FIND DIRECTION
+  start_up_pulses = false;
+  HAL_GPIO_WritePin(ENC_EN_GPIO_Port, ENC_EN_Pin, 1);
+  HAL_Delay(10);
+  // Reset angle
+  enc_angle_int = 0;
+  // Enable magnetic encoder
+  HAL_GPIO_WritePin(ENC_EN_GPIO_Port, ENC_EN_Pin, 0);
+  HAL_Delay(10);
+  // Adjust startup pulse direction
+  if(enc_angle_int < 0){
+    enc_angle_int = start_up_pulse_count;
+  }else{
+    enc_angle_int = -start_up_pulse_count;
+  }
+
+
 }
 
 void start_ADC_DMA(){
@@ -39,7 +62,11 @@ void start_ADC_DMA(){
   HAL_ADC_Start_DMA(&hadc2, adc2_dma, 3);
 }
 
-void calib_DRV_amps(){
+// void get_vmot(){
+//   return adc1_dma,
+// }
+
+void calibrate_DRV_amps(){
     // Perform DRV amp calibration
     HAL_GPIO_WritePin(DRV_CAL_GPIO_Port, DRV_CAL_Pin, 1);
     // Wait for internal calibration

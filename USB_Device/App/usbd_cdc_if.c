@@ -94,7 +94,9 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-
+#define CDC_RX_BUFFER_SIZE 128
+uint8_t cdcRxBuffer[CDC_RX_BUFFER_SIZE];
+uint32_t cdcRxBufferIndex = 0;
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -262,7 +264,21 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
 
-  CDC_Transmit_FS(Buf, *Len);
+  // Echo back
+  // CDC_Transmit_FS(Buf, *Len);
+
+  // Add into buffer
+  for (int i = 0; i < *Len; i++) {
+      // Check for buffer overflow
+      if (cdcRxBufferIndex < CDC_RX_BUFFER_SIZE) {
+          cdcRxBuffer[cdcRxBufferIndex++] = Buf[i];
+      }
+
+      if(Buf[i] == '\r'){
+        process_USB_rx(cdcRxBuffer, &cdcRxBufferIndex);
+        cdcRxBufferIndex = 0;
+      }
+  }
 
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);

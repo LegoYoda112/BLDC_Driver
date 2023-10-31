@@ -3,3 +3,8 @@ firmware/Drivers/CMSIS
 firmware/Drivers/STM32G4xx_HAL_Driver
 firmware/Middlewares/ST
 firmware/Middlewares/Third_Party/FreeRTOS
+
+_build
+_static
+_templates
+_doxygen_build

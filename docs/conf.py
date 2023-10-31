@@ -13,9 +13,9 @@ subprocess.call(['doxygen Doxyfile.in'], shell=True)
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = '50x50 Drive'
-copyright = '2023, Thomas Godden'
+copyright = '2023'
 author = 'Thomas Godden'
-release = '0.0.1'
+release = '0.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

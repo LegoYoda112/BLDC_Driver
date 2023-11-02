@@ -41,7 +41,12 @@ extern uint8_t angle;
 
 extern uint16_t encoder_zeros[10];
 
+extern uint16_t v_motor_mv;
+
 extern TIM_HandleTypeDef htim7;
+
+void enable_DRV();
+void disable_DRV();
 
 /**
  * @brief Field Oriented Control interrupt function, called at 10 kHz

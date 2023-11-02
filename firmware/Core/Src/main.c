@@ -247,11 +247,21 @@ int main(void)
   HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_2);
 
+  // Wait for voltages to stabalize before calibrating
+  HAL_Delay(10);
+
+  //
+  if (HAL_ADCEx_Calibration_Start(&hadc1,ADC_SINGLE_ENDED) != HAL_OK)
+	{
+		printf("Did not calibrate right!");
+	}
+
   // Start DMA on ADC channels
   start_ADC_DMA();
 
   // Calibrate DRV amps
   enable_DRV();
+  HAL_Delay(5);
   calibrate_DRV_amps();
 
   // Start FOC timer
@@ -381,7 +391,7 @@ static void MX_ADC1_Init(void)
   /** Common config
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV64;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV128;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.GainCompensation = 0;
@@ -458,12 +468,12 @@ static void MX_ADC2_Init(void)
   /** Common config
   */
   hadc2.Instance = ADC2;
-  hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV64;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV128;
   hadc2.Init.Resolution = ADC_RESOLUTION_12B;
   hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc2.Init.GainCompensation = 0;
   hadc2.Init.ScanConvMode = ADC_SCAN_ENABLE;
-  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc2.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   hadc2.Init.LowPowerAutoWait = DISABLE;
   hadc2.Init.ContinuousConvMode = ENABLE;
   hadc2.Init.NbrOfConversion = 3;
@@ -482,7 +492,7 @@ static void MX_ADC2_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_6CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -1080,6 +1090,8 @@ void StartStatusBlink(void *argument)
   float speed = 0.01f;
   for(;;)
   {
+    get_vmotor();
+    
     led_hsv(enc_angle_int / (4096.0f / 360.0f) + 10000.0f, 1.0f, 1.0f);
 
     char intStr[20];
@@ -1103,25 +1115,33 @@ void StartStatusBlink(void *argument)
     CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
     osDelay(1);
 
-    sprintf(intStr, "vmot_adc %d \r\n", adc1_dma[0]);
+    sprintf(intStr, "vmot_adc %d \r\n", v_motor_mv);
     CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
     osDelay(1);
 
-    update_current_sense();
+    // update_current_sense();
 
-    sprintf(intStr, "adc2_0 %d \r\n", (int)(current_sense[0] * 100));
+    sprintf(intStr, "adc2_0 %d \r\n", (int)(current_sense[0] * 1000));
     CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
     osDelay(1);
 
-    sprintf(intStr, "adc2_1 %d \r\n", (int)(current_sense[1] * 100));
+    sprintf(intStr, "adc2_1 %d \r\n", (int)(current_sense[1] * 1000));
     CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
     osDelay(1);
 
-    sprintf(intStr, "adc2_2 %d \r\n", (int)(current_sense[2] * 100));
+    sprintf(intStr, "adc2_2 %d \r\n", (int)(current_sense[2] * 1000));
     CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
     osDelay(1);
 
-    osDelay(30);
+    sprintf(intStr, "alpha %d \r\n", (int)(alpha_current * 1000));
+    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
+    osDelay(1);
+
+    sprintf(intStr, "beta %d \r\n", (int)(beta_current * 1000));
+    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
+    osDelay(1);
+
+    osDelay(10);
   }
   /* USER CODE END StartStatusBlink */
 }
@@ -1151,7 +1171,9 @@ void StartMainStateLoop(void *argument)
     // target_encoder_value = 4096 * 1;
     // osDelay(3000);
     // target_encoder_value = 0;
-    // osDelay(3000);
+    // spin_electrical_rev_forward_os(2);
+    osDelay(1);
+    target_encoder_value += 0;
   }
   /* USER CODE END StartMainStateLoop */
 }

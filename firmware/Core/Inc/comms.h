@@ -4,6 +4,10 @@
 #include "main.h"
 #include "drive.h"
 
+extern FDCAN_HandleTypeDef hfdcan1;
+
+#define SET_TARGET_POSITION 12
+
 /**
  * @brief Called when a new line of USB data is received
  * 
@@ -13,5 +17,13 @@
  * Buffer will fill until a newline character ('\\n') is sent through the virtual comm port
  */
 void process_USB_rx(uint8_t* Buf, uint32_t *Len);
+
+/**
+ * @brief Starts hfdcan1 and activates RX interrupt
+ * 
+ */
+void start_can();
+
+void can_send();
 
 #endif

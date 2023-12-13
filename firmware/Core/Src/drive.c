@@ -84,7 +84,7 @@ void apply_voltage_at_electrical_angle(uint8_t angle, uint16_t voltage_mv){
 // }
 
 uint8_t angle = 0;
-int max_voltage = 2000;
+int max_voltage = 8000;
 
 void foc_interrupt(){
     update_current_sense();
@@ -96,7 +96,7 @@ void foc_interrupt(){
     if(foc_drive_enabled){
         // int power = 200;
 
-        int voltage = 10 * (target_encoder_value - enc_angle_int);
+        int voltage = 5 * (target_encoder_value - enc_angle_int);
         // int power = 3;
         electrical_angle = ((enc_angle_int - electrical_angle_offset) % 512);
 
@@ -168,9 +168,9 @@ void spin_electrical_rev_forward_os(int calibration_voltage){
     //     osDelay(10);
     // }
 
-    for(int i = 0; i<=100; i++){
-        apply_duty_at_electrical_angle((2.0f * PI * i)/100.0f, calibration_voltage);
-        osDelay(5);
+    for(int i = 0; i<=500; i++){
+        apply_duty_at_electrical_angle((2.0f * PI * i)/500.0f, calibration_voltage);
+        osDelay(1);
     }
 }
 
@@ -241,9 +241,9 @@ void calibrate_encoder_offset(int calibration_voltage){
     // electrical_angle_offset = electrical_angle_offset / 10;
 
 
-    electrical_angle_offset = 157;
+    electrical_angle_offset = 162;
 
     motor_calibrated = true;
     enable_foc_loop();
-    //disable_foc_loop();
+    // disable_foc_loop();
 }

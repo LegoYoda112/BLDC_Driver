@@ -110,7 +110,7 @@ void calibrate_DRV_amps(){
 }
 
 void update_current_sense(){
-  float filter_constant = 0.05f;
+  float filter_constant = 0.005f;
   // TODO: Set up proper phase numbering
   // current_sense[0] = (current_sense[0]) * (1 - filter_constant) + (((((int)adc2_dma[0] - (int)adc2_calib_offset[0]) / ADC_MAX) * 3.3f) / (AMP_GAIN * SHUNT_VALUE_R)) * filter_constant;
   // current_sense[1] = (current_sense[1]) * (1 - filter_constant) + (((((int)adc2_dma[1] - (int)adc2_calib_offset[1]) / ADC_MAX) * 3.3f) / (AMP_GAIN * SHUNT_VALUE_R)) * filter_constant;

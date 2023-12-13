@@ -274,7 +274,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
           cdcRxBuffer[cdcRxBufferIndex++] = Buf[i];
       }
 
-      if(Buf[i] == '\r'){
+      if(Buf[i-1] == '\r' && Buf[i] == '\n' && i > 3){
         process_USB_rx(cdcRxBuffer, &cdcRxBufferIndex);
         cdcRxBufferIndex = 0;
       }

@@ -135,15 +135,15 @@ void StartMainStateLoop(void *argument);
 // TODO: not use floats or something idk
 const uint16_t LED_MAX = 200;
 void set_led_red_pwm(float value){
-  TIM15->CCR1 = LED_MAX - (value * LED_MAX);
+  TIM15->CCR1 = (value * LED_MAX);
 }
 
 void set_led_blue_pwm(float value){
-  TIM3->CCR2 = LED_MAX - (value * LED_MAX);
+  TIM3->CCR2 = (value * LED_MAX);
 }
 
 void set_led_green_pwm(float value){
-  TIM15->CCR2 = LED_MAX - (value * 0.5 * LED_MAX);
+  TIM15->CCR2 = (value * 1.0 * LED_MAX);
 }
 
 void led_hsv(float H, float S, float V){
@@ -270,6 +270,9 @@ int main(void)
   HAL_GPIO_WritePin(INLX_GPIO_Port, INLX_Pin, 1);
   calibrate_encoder_offset(15);
 
+  // Start CAN
+  start_can();
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -311,6 +314,7 @@ int main(void)
 
   /* Start scheduler */
   osKernelStart();
+
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -570,11 +574,11 @@ static void MX_FDCAN1_Init(void)
   hfdcan1.Init.FrameFormat = FDCAN_FRAME_CLASSIC;
   hfdcan1.Init.Mode = FDCAN_MODE_NORMAL;
   hfdcan1.Init.AutoRetransmission = DISABLE;
-  hfdcan1.Init.TransmitPause = DISABLE;
+  hfdcan1.Init.TransmitPause = ENABLE;
   hfdcan1.Init.ProtocolException = DISABLE;
   hfdcan1.Init.NominalPrescaler = 16;
   hfdcan1.Init.NominalSyncJumpWidth = 1;
-  hfdcan1.Init.NominalTimeSeg1 = 2;
+  hfdcan1.Init.NominalTimeSeg1 = 15;
   hfdcan1.Init.NominalTimeSeg2 = 2;
   hfdcan1.Init.DataPrescaler = 1;
   hfdcan1.Init.DataSyncJumpWidth = 1;
@@ -803,7 +807,7 @@ static void MX_TIM3_Init(void)
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
@@ -930,7 +934,7 @@ static void MX_TIM15_Init(void)
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
@@ -1066,6 +1070,7 @@ void StartDefaultTask(void *argument)
 
   for(;;)
   { 
+    // can_send();
     osDelay(1000);
   }
   /* USER CODE END 5 */
@@ -1171,9 +1176,10 @@ void StartMainStateLoop(void *argument)
     // target_encoder_value = 4096 * 1;
     // osDelay(3000);
     // target_encoder_value = 0;
-    // spin_electrical_rev_forward_os(2);
-    osDelay(1);
-    target_encoder_value += 0;
+    // spin_electrical_rev_forward_os(6);
+    // osDelay(1);
+    // target_encoder_value += 0;
+    osDelay(1000);
   }
   /* USER CODE END StartMainStateLoop */
 }

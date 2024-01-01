@@ -22,7 +22,7 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "comms.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -263,21 +263,16 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-
-  // Echo back
-  // CDC_Transmit_FS(Buf, *Len);
-
-  // Add into buffer
   for (int i = 0; i < *Len; i++) {
-      // Check for buffer overflow
-      if (cdcRxBufferIndex < CDC_RX_BUFFER_SIZE) {
-          cdcRxBuffer[cdcRxBufferIndex++] = Buf[i];
-      }
+    // Check for buffer overflow
+    if (cdcRxBufferIndex < CDC_RX_BUFFER_SIZE) {
+        cdcRxBuffer[cdcRxBufferIndex++] = Buf[i];
+    }
 
-      if(Buf[i-1] == '\r' && Buf[i] == '\n' && i > 3){
-        process_USB_rx(cdcRxBuffer, &cdcRxBufferIndex);
-        cdcRxBufferIndex = 0;
-      }
+    if(Buf[i] == '\r'){
+      process_USB_rx(cdcRxBuffer, cdcRxBufferIndex);
+      cdcRxBufferIndex = 0;
+    }
   }
 
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);

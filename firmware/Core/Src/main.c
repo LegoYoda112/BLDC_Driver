@@ -23,15 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "math.h"
-#include "usbd_cdc_if.h"
-#include "usbd_cdc.h"
-#include "usbd_conf.h"
-#include "string.h"
-
-#include "sensors.h"
-#include "drive.h"
-#include "comms.h"
+#include "app.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-// #define PI 3.1415
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -120,77 +112,6 @@ void StartMainStateLoop(void *argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-// static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len){
-
-  
-//   osDelay(10);
-//   char intStr[12];
-//   sprintf(intStr, "%d\r\n", enc_position);
-
-//   CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-
-//   return (USBD_OK);
-//   /* USER CODE END 6 */
-// }
-
-// TODO: not use floats or something idk
-const uint16_t LED_MAX = 200;
-void set_led_red_pwm(float value){
-  TIM15->CCR1 = (value * LED_MAX);
-}
-
-void set_led_blue_pwm(float value){
-  TIM3->CCR2 = (value * LED_MAX);
-}
-
-void set_led_green_pwm(float value){
-  TIM15->CCR2 = (value * 1.0 * LED_MAX);
-}
-
-void led_hsv(float H, float S, float V){
-
-  // Log dimming curve
-  if(V < 0){
-    V = 0;
-  }
-  V = V*V;
-
-  float C = V * S;
-  float H_prime = fmod(H, 360) / 60.0f;
-  // volatile float mod_test = fabs((float)fmod(H_prime, 2) - 1.0f;
-  float X = C * (1.0f - fabs( fmod(H_prime, 2.0f) - 1.0f));
-
-  float r = 0;
-  float g = 0;
-  float b = 0;
-
-  if(0 <= H_prime && H_prime < 1){
-    r = C;
-    g = X;
-  }else if(1 <= H_prime && H_prime < 2){
-    r = X;
-    g = C;
-  }else if(2 <= H_prime && H_prime < 3){
-    g = C;
-    b = X;
-  }else if(3 <= H_prime && H_prime < 4){
-    g = X;
-    b = C;
-  }else if(4 <= H_prime && H_prime < 5){
-    r = X;
-    b = C;
-  }else if(5 <= H_prime && H_prime < 6){
-    r = C;
-    b = X;
-  }
-
-  float m = V - C;
-
-  set_led_red_pwm(r + m);
-  set_led_green_pwm(g + m);
-  set_led_blue_pwm(b + m);
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -236,43 +157,7 @@ int main(void)
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
-  set_encoder_absolute_offset();
-  // START PWM
-
-  // Phases
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-  // LED
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_2);
-
-  // Wait for voltages to stabalize before calibrating
-  HAL_Delay(10);
-
-  //
-  if (HAL_ADCEx_Calibration_Start(&hadc1,ADC_SINGLE_ENDED) != HAL_OK)
-	{
-		printf("Did not calibrate right!");
-	}
-
-  // Start DMA on ADC channels
-  start_ADC_DMA();
-
-  // Calibrate DRV amps
-  enable_DRV();
-  HAL_Delay(5);
-  calibrate_DRV_amps();
-
-  // Start FOC timer
-  HAL_TIM_Base_Start_IT(&htim6); 
-  
-  HAL_GPIO_WritePin(INLX_GPIO_Port, INLX_Pin, 1);
-  calibrate_encoder_offset(15);
-
-  // Start CAN
-  start_can();
+  app_setup();
 
   /* USER CODE END 2 */
 
@@ -593,6 +478,7 @@ static void MX_FDCAN1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN FDCAN1_Init 2 */
+  
 
   /* USER CODE END FDCAN1_Init 2 */
 
@@ -793,7 +679,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 96 -1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 253;
+  htim3.Init.Period = 199;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -938,7 +824,7 @@ static void MX_TIM15_Init(void)
   sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_SET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
   if (HAL_TIM_PWM_ConfigChannel(&htim15, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
@@ -1050,11 +936,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_GPIO_EXTI_Callback(uint16_t pin){
-  if(pin == IFA_Pin){
-    encoder_ISR();
-  }
-}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -1068,11 +950,9 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
-
   for(;;)
-  { 
-    // can_send();
-    osDelay(1000);
+  {
+    osDelay(1);
   }
   /* USER CODE END 5 */
 }
@@ -1088,66 +968,9 @@ void StartStatusBlink(void *argument)
 {
   /* USER CODE BEGIN StartStatusBlink */
   /* Infinite loop */
-  uint16_t led_timer = 0;
-  float r_scale = 0.5f;
-  float g_scale = 0.1f;
-  float b_scale = 0.0f;
-
-  float speed = 0.01f;
   for(;;)
   {
-    get_vmotor();
-    
-    led_hsv(enc_angle_int / (4096.0f / 360.0f) + 10000.0f, 1.0f, 1.0f);
-
-    char intStr[20];
-    sprintf(intStr, "encoder_angle %d \r\n", enc_angle_int);
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "electrical_angle %d \r\n", electrical_angle);
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "electrical_angle_offset %d \r\n", electrical_angle_offset);
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "angle %d \r\n", (int) (angle * 100));
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "temp_adc %d \r\n", adc1_dma[1]);
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "vmot_adc %d \r\n", v_motor_mv);
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    // update_current_sense();
-
-    sprintf(intStr, "adc2_0 %d \r\n", (int)(current_sense[0] * 1000));
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "adc2_1 %d \r\n", (int)(current_sense[1] * 1000));
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "adc2_2 %d \r\n", (int)(current_sense[2] * 1000));
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "alpha %d \r\n", (int)(alpha_current * 1000));
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "beta %d \r\n", (int)(beta_current * 1000));
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    osDelay(10);
+    app_status_led_task();
   }
   /* USER CODE END StartStatusBlink */
 }
@@ -1163,38 +986,9 @@ void StartMainStateLoop(void *argument)
 {
   /* USER CODE BEGIN StartMainStateLoop */
   /* Infinite loop */
-
-  // volatile HAL_StatusTypeDef status;
-  
-  // uint16_t eeprom_address = 0xA0;
-  // uint16_t data_address = 0x00;
-  // uint8_t data_to_write = 0x42;
-
-  // status = HAL_I2C_Mem_Write(&hi2c1, eeprom_address, eeprom_address, I2C_MEMADD_SIZE_8BIT, &data_to_write, 1, 100);
-  uint8_t i = 0;
   for(;;)
-  { 
-    // target_encoder_value = 4096 * 1;
-    // osDelay(3000);
-    // target_encoder_value = 0;
-    // spin_electrical_rev_forward_os(6);
-    // osDelay(1);
-    // target_encoder_value += 0;
-    osDelay(200);
-
-    // For loop? I don't even know her
-    TxData[0] = i;
-    TxData[1] = i;
-    TxData[2] = 200;
-    TxData[3] = 3;
-    TxData[4] = 4;
-    TxData[5] = 5;
-    TxData[6] = 6;
-    TxData[7] = 7;
-
-    i+=1;
-
-    CAN_Transmit_Safe(&TxHeader, TxData);
+  {
+    osDelay(1);
   }
   /* USER CODE END StartMainStateLoop */
 }
@@ -1210,9 +1004,6 @@ void StartMainStateLoop(void *argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-  if (htim->Instance == TIM6) {
-    foc_interrupt();
-  }
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM2) {

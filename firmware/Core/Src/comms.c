@@ -1,5 +1,7 @@
 #include "comms.h"
 
+unsigned char __attribute__((section(".bootBlockRAM"))) boot_bits[10];
+
 FDCAN_TxHeaderTypeDef TxHeader;
 FDCAN_RxHeaderTypeDef RxHeader;
 
@@ -73,6 +75,8 @@ void start_can(){
     {
         Error_Handler();
     }
+
+    boot_bits[0] = 'L';
 }
 
 // void can_send(){

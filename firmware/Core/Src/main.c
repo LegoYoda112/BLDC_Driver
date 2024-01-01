@@ -31,6 +31,7 @@
 
 #include "sensors.h"
 #include "drive.h"
+#include "comms.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -1170,7 +1171,7 @@ void StartMainStateLoop(void *argument)
   // uint8_t data_to_write = 0x42;
 
   // status = HAL_I2C_Mem_Write(&hi2c1, eeprom_address, eeprom_address, I2C_MEMADD_SIZE_8BIT, &data_to_write, 1, 100);
-
+  uint8_t i = 0;
   for(;;)
   { 
     // target_encoder_value = 4096 * 1;
@@ -1179,7 +1180,21 @@ void StartMainStateLoop(void *argument)
     // spin_electrical_rev_forward_os(6);
     // osDelay(1);
     // target_encoder_value += 0;
-    osDelay(1000);
+    osDelay(200);
+
+    // For loop? I don't even know her
+    TxData[0] = i;
+    TxData[1] = i;
+    TxData[2] = 200;
+    TxData[3] = 3;
+    TxData[4] = 4;
+    TxData[5] = 5;
+    TxData[6] = 6;
+    TxData[7] = 7;
+
+    i+=1;
+
+    CAN_Transmit_Safe(&TxHeader, TxData);
   }
   /* USER CODE END StartMainStateLoop */
 }

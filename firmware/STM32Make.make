@@ -38,9 +38,11 @@ BUILD_DIR = build
 C_SOURCES =  \
 Core/Src/app.c \
 Core/Src/app_freertos.c \
+Core/Src/app_timers.c \
 Core/Src/comms.c \
 Core/Src/led.c \
 Core/Src/main.c \
+Core/Src/sensors.c \
 Core/Src/stm32g4xx_hal_msp.c \
 Core/Src/stm32g4xx_hal_timebase_tim.c \
 Core/Src/stm32g4xx_it.c \

@@ -9,4 +9,6 @@ _static
 _templates
 _doxygen_build
 
+__pycache__
+
 .vscode

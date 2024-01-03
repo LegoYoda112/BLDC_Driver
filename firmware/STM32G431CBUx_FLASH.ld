@@ -62,7 +62,7 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 32K
-FLASH (rx)      : ORIGIN = 0x8008000, LENGTH = 92K
+FLASH (rx)      : ORIGIN = 0x8008000, LENGTH = 128K
 }
 
 /* Define output sections */
@@ -76,7 +76,8 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
-  .bootBlockRAM (NOLOAD):
+  
+  .bootBlockRAM 0x20000100 (NOLOAD):
   {
     KEEP(*(.bootBlockRAM))
   } > RAM

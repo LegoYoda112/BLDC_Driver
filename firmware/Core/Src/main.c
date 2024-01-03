@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app.h"
+#include "sensors.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -130,7 +131,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  __enable_irq();
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -156,9 +157,7 @@ int main(void)
   MX_CORDIC_Init();
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
-
   app_setup();
-
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -763,7 +762,7 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 0;
+  htim7.Init.Prescaler = 14400-1;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim7.Init.Period = 65535;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -936,7 +935,11 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_GPIO_EXTI_Callback(uint16_t pin){
+  if(pin == IFA_Pin){
+    encoder_ISR();
+  }
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */

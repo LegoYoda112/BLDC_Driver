@@ -20,7 +20,7 @@ int num_sent = 0;
 unsigned char __attribute__((section(".bootBlockRAM"))) boot_bits[10];
 
 // Placeholder CAN_ID
-uint16_t device_can_id = 2000;
+uint16_t device_can_id = 69;
 
 int CAN_Transmit_Safe(FDCAN_TxHeaderTypeDef *TxHeader, uint8_t *TxData)
 { 
@@ -95,25 +95,24 @@ void process_USB_rx(uint8_t *Buf, uint32_t buffer_length)
     /////// Enter bootloader
     if(Buf[0] == 'B' && Buf[1] == 'T' && Buf[2] == 'L'){
         // Set ram blocks to request bootloader to run
-        // boot_bits[0] = 'B';
-        // boot_bits[1] = 'T';
-        // boot_bits[2] = 'L';
+        boot_bits[0] = 'B';
+        boot_bits[1] = 'T';
+        boot_bits[2] = 'L';
         HAL_NVIC_SystemReset();
     }
 
     /////// Open interface
     if (Buf[0] == 'O')
     {
-        // Check if CAN is already started, ignore if so
-        if (HAL_FDCAN_GetState(&hfdcan1) != HAL_FDCAN_STATE_READY)
+        // Check if CAN is already started
+        if (HAL_FDCAN_GetState(&hfdcan1) == HAL_FDCAN_STATE_READY)
         {
+            // Else, attempt to start CAN interface
+            if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK)
+            {
+                Error_Handler();
+            }
             return;
-        }
-
-        // Else, attempt to start CAN interface
-        if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK)
-        {
-            Error_Handler();
         }
 
         app_state = app_state_active;
@@ -291,6 +290,15 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
     if(slcan_open){
         rx_msg_led = true;
         send_slcan_string(RxHeader, RxData);
+    }
+
+    ////////// Jump to bootloader 
+    if(RxData[0] == 'B' && RxData[1] == 'T' && RxData[2] == 'L'){
+        // Set ram blocks to request app to run
+        boot_bits[0] = 'B';
+        boot_bits[1] = 'T';
+        boot_bits[2] = 'L';
+        HAL_NVIC_SystemReset();
     }
 
     if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK)

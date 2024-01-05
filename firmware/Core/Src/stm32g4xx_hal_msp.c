@@ -200,7 +200,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     hdma_adc2.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     hdma_adc2.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
     hdma_adc2.Init.Mode = DMA_CIRCULAR;
-    hdma_adc2.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_adc2.Init.Priority = DMA_PRIORITY_MEDIUM;
     if (HAL_DMA_Init(&hdma_adc2) != HAL_OK)
     {
       Error_Handler();
@@ -270,50 +270,6 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
   /* USER CODE BEGIN ADC2_MspDeInit 1 */
 
   /* USER CODE END ADC2_MspDeInit 1 */
-  }
-
-}
-
-/**
-* @brief CORDIC MSP Initialization
-* This function configures the hardware resources used in this example
-* @param hcordic: CORDIC handle pointer
-* @retval None
-*/
-void HAL_CORDIC_MspInit(CORDIC_HandleTypeDef* hcordic)
-{
-  if(hcordic->Instance==CORDIC)
-  {
-  /* USER CODE BEGIN CORDIC_MspInit 0 */
-
-  /* USER CODE END CORDIC_MspInit 0 */
-    /* Peripheral clock enable */
-    __HAL_RCC_CORDIC_CLK_ENABLE();
-  /* USER CODE BEGIN CORDIC_MspInit 1 */
-
-  /* USER CODE END CORDIC_MspInit 1 */
-  }
-
-}
-
-/**
-* @brief CORDIC MSP De-Initialization
-* This function freeze the hardware resources used in this example
-* @param hcordic: CORDIC handle pointer
-* @retval None
-*/
-void HAL_CORDIC_MspDeInit(CORDIC_HandleTypeDef* hcordic)
-{
-  if(hcordic->Instance==CORDIC)
-  {
-  /* USER CODE BEGIN CORDIC_MspDeInit 0 */
-
-  /* USER CODE END CORDIC_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_CORDIC_CLK_DISABLE();
-  /* USER CODE BEGIN CORDIC_MspDeInit 1 */
-
-  /* USER CODE END CORDIC_MspDeInit 1 */
   }
 
 }

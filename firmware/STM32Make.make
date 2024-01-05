@@ -13,7 +13,7 @@
 ######################################
 # target
 ######################################
-TARGET = BLDC_Driver
+TARGET = 50x50_DRIVE
 
 
 ######################################
@@ -36,20 +36,20 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
+Core/Src/app.c \
 Core/Src/app_freertos.c \
+Core/Src/app_timers.c \
 Core/Src/comms.c \
-Core/Src/drive.c \
+Core/Src/led.c \
 Core/Src/main.c \
 Core/Src/sensors.c \
 Core/Src/stm32g4xx_hal_msp.c \
 Core/Src/stm32g4xx_hal_timebase_tim.c \
 Core/Src/stm32g4xx_it.c \
 Core/Src/system_stm32g4xx.c \
-Core/Src/trig_luts.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc_ex.c \
-Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_cordic.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_cortex.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_dma.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_dma_ex.c \

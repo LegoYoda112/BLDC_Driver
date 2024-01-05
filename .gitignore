@@ -4,9 +4,16 @@ firmware/Drivers/STM32G4xx_HAL_Driver
 firmware/Middlewares/ST
 firmware/Middlewares/Third_Party/FreeRTOS
 
+bootloader/Drivers/CMSIS
+bootloader/Drivers/STM32G4xx_HAL_Driver
+bootloader/Middlewares/ST
+bootloader/Middlewares/Third_Party/FreeRTOS
+
 _build
 _static
 _templates
 _doxygen_build
+
+__pycache__
 
 .vscode

@@ -23,14 +23,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "math.h"
-#include "usbd_cdc_if.h"
-#include "usbd_cdc.h"
-#include "usbd_conf.h"
-#include "string.h"
-
+#include "app.h"
 #include "sensors.h"
-#include "drive.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-// #define PI 3.1415
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -53,8 +47,6 @@ ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
 DMA_HandleTypeDef hdma_adc1;
 DMA_HandleTypeDef hdma_adc2;
-
-CORDIC_HandleTypeDef hcordic;
 
 FDCAN_HandleTypeDef hfdcan1;
 
@@ -106,7 +98,6 @@ static void MX_TIM3_Init(void);
 static void MX_TIM15_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_LPTIM1_Init(void);
-static void MX_CORDIC_Init(void);
 static void MX_TIM7_Init(void);
 void StartDefaultTask(void *argument);
 void StartStatusBlink(void *argument);
@@ -118,77 +109,6 @@ void StartMainStateLoop(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-// static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len){
-
-  
-//   osDelay(10);
-//   char intStr[12];
-//   sprintf(intStr, "%d\r\n", enc_position);
-
-//   CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-
-//   return (USBD_OK);
-//   /* USER CODE END 6 */
-// }
-
-// TODO: not use floats or something idk
-const uint16_t LED_MAX = 200;
-void set_led_red_pwm(float value){
-  TIM15->CCR1 = LED_MAX - (value * LED_MAX);
-}
-
-void set_led_blue_pwm(float value){
-  TIM3->CCR2 = LED_MAX - (value * LED_MAX);
-}
-
-void set_led_green_pwm(float value){
-  TIM15->CCR2 = LED_MAX - (value * 0.5 * LED_MAX);
-}
-
-void led_hsv(float H, float S, float V){
-
-  // Log dimming curve
-  if(V < 0){
-    V = 0;
-  }
-  V = V*V;
-
-  float C = V * S;
-  float H_prime = fmod(H, 360) / 60.0f;
-  // volatile float mod_test = fabs((float)fmod(H_prime, 2) - 1.0f;
-  float X = C * (1.0f - fabs( fmod(H_prime, 2.0f) - 1.0f));
-
-  float r = 0;
-  float g = 0;
-  float b = 0;
-
-  if(0 <= H_prime && H_prime < 1){
-    r = C;
-    g = X;
-  }else if(1 <= H_prime && H_prime < 2){
-    r = X;
-    g = C;
-  }else if(2 <= H_prime && H_prime < 3){
-    g = C;
-    b = X;
-  }else if(3 <= H_prime && H_prime < 4){
-    g = X;
-    b = C;
-  }else if(4 <= H_prime && H_prime < 5){
-    r = X;
-    b = C;
-  }else if(5 <= H_prime && H_prime < 6){
-    r = C;
-    b = X;
-  }
-
-  float m = V - C;
-
-  set_led_red_pwm(r + m);
-  set_led_green_pwm(g + m);
-  set_led_blue_pwm(b + m);
-}
 
 /* USER CODE END 0 */
 
@@ -208,7 +128,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  __enable_irq();
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -231,35 +151,9 @@ int main(void)
   MX_TIM15_Init();
   MX_TIM6_Init();
   MX_LPTIM1_Init();
-  MX_CORDIC_Init();
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
-
-  set_encoder_absolute_offset();
-  // START PWM
-
-  // Phases
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-  // LED
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_2);
-
-  // Start DMA on ADC channels
-  start_ADC_DMA();
-
-  // Calibrate DRV amps
-  enable_DRV();
-  calibrate_DRV_amps();
-
-  // Start FOC timer
-  HAL_TIM_Base_Start_IT(&htim6); 
-  
-  HAL_GPIO_WritePin(INLX_GPIO_Port, INLX_Pin, 1);
-  calibrate_encoder_offset(15);
-
+  app_setup();
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -301,6 +195,7 @@ int main(void)
 
   /* Start scheduler */
   osKernelStart();
+
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -381,7 +276,7 @@ static void MX_ADC1_Init(void)
   /** Common config
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV64;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV128;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.GainCompensation = 0;
@@ -458,19 +353,19 @@ static void MX_ADC2_Init(void)
   /** Common config
   */
   hadc2.Instance = ADC2;
-  hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV64;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV128;
   hadc2.Init.Resolution = ADC_RESOLUTION_12B;
   hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc2.Init.GainCompensation = 0;
   hadc2.Init.ScanConvMode = ADC_SCAN_ENABLE;
-  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc2.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   hadc2.Init.LowPowerAutoWait = DISABLE;
   hadc2.Init.ContinuousConvMode = ENABLE;
   hadc2.Init.NbrOfConversion = 3;
   hadc2.Init.DiscontinuousConvMode = DISABLE;
-  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc2.Init.DMAContinuousRequests = ENABLE;
+  hadc2.Init.ExternalTrigConv = ADC_EXTERNALTRIG_T1_TRGO;
+  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
+  hadc2.Init.DMAContinuousRequests = DISABLE;
   hadc2.Init.Overrun = ADC_OVR_DATA_PRESERVED;
   hadc2.Init.OversamplingMode = DISABLE;
   if (HAL_ADC_Init(&hadc2) != HAL_OK)
@@ -482,7 +377,7 @@ static void MX_ADC2_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_6CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -515,32 +410,6 @@ static void MX_ADC2_Init(void)
 }
 
 /**
-  * @brief CORDIC Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_CORDIC_Init(void)
-{
-
-  /* USER CODE BEGIN CORDIC_Init 0 */
-
-  /* USER CODE END CORDIC_Init 0 */
-
-  /* USER CODE BEGIN CORDIC_Init 1 */
-
-  /* USER CODE END CORDIC_Init 1 */
-  hcordic.Instance = CORDIC;
-  if (HAL_CORDIC_Init(&hcordic) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN CORDIC_Init 2 */
-
-  /* USER CODE END CORDIC_Init 2 */
-
-}
-
-/**
   * @brief FDCAN1 Initialization Function
   * @param None
   * @retval None
@@ -560,11 +429,11 @@ static void MX_FDCAN1_Init(void)
   hfdcan1.Init.FrameFormat = FDCAN_FRAME_CLASSIC;
   hfdcan1.Init.Mode = FDCAN_MODE_NORMAL;
   hfdcan1.Init.AutoRetransmission = DISABLE;
-  hfdcan1.Init.TransmitPause = DISABLE;
+  hfdcan1.Init.TransmitPause = ENABLE;
   hfdcan1.Init.ProtocolException = DISABLE;
   hfdcan1.Init.NominalPrescaler = 16;
   hfdcan1.Init.NominalSyncJumpWidth = 1;
-  hfdcan1.Init.NominalTimeSeg1 = 2;
+  hfdcan1.Init.NominalTimeSeg1 = 15;
   hfdcan1.Init.NominalTimeSeg2 = 2;
   hfdcan1.Init.DataPrescaler = 1;
   hfdcan1.Init.DataSyncJumpWidth = 1;
@@ -578,6 +447,7 @@ static void MX_FDCAN1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN FDCAN1_Init 2 */
+  
 
   /* USER CODE END FDCAN1_Init 2 */
 
@@ -689,7 +559,7 @@ static void MX_TIM1_Init(void)
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 48-1;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
   htim1.Init.Period = 100;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
@@ -707,7 +577,7 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
   sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
@@ -778,7 +648,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 96 -1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 253;
+  htim3.Init.Period = 199;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -793,7 +663,7 @@ static void MX_TIM3_Init(void)
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
@@ -862,7 +732,7 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 0;
+  htim7.Init.Prescaler = 14400-1;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim7.Init.Period = 65535;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -920,10 +790,10 @@ static void MX_TIM15_Init(void)
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_SET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
   if (HAL_TIM_PWM_ConfigChannel(&htim15, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
@@ -1053,10 +923,9 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
-
   for(;;)
-  { 
-    osDelay(1000);
+  {
+    osDelay(1);
   }
   /* USER CODE END 5 */
 }
@@ -1072,56 +941,9 @@ void StartStatusBlink(void *argument)
 {
   /* USER CODE BEGIN StartStatusBlink */
   /* Infinite loop */
-  uint16_t led_timer = 0;
-  float r_scale = 0.5f;
-  float g_scale = 0.1f;
-  float b_scale = 0.0f;
-
-  float speed = 0.01f;
   for(;;)
   {
-    led_hsv(enc_angle_int / (4096.0f / 360.0f) + 10000.0f, 1.0f, 1.0f);
-
-    char intStr[20];
-    sprintf(intStr, "encoder_angle %d \r\n", enc_angle_int);
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "electrical_angle %d \r\n", electrical_angle);
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "electrical_angle_offset %d \r\n", electrical_angle_offset);
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "angle %d \r\n", (int) (angle * 100));
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "temp_adc %d \r\n", adc1_dma[1]);
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "vmot_adc %d \r\n", adc1_dma[0]);
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    update_current_sense();
-
-    sprintf(intStr, "adc2_0 %d \r\n", (int)(current_sense[0] * 100));
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "adc2_1 %d \r\n", (int)(current_sense[1] * 100));
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    sprintf(intStr, "adc2_2 %d \r\n", (int)(current_sense[2] * 100));
-    CDC_Transmit_FS((uint8_t*)intStr, strlen(intStr));
-    osDelay(1);
-
-    osDelay(30);
+    app_status_led_task();
   }
   /* USER CODE END StartStatusBlink */
 }
@@ -1137,21 +959,9 @@ void StartMainStateLoop(void *argument)
 {
   /* USER CODE BEGIN StartMainStateLoop */
   /* Infinite loop */
-
-  // volatile HAL_StatusTypeDef status;
-  
-  // uint16_t eeprom_address = 0xA0;
-  // uint16_t data_address = 0x00;
-  // uint8_t data_to_write = 0x42;
-
-  // status = HAL_I2C_Mem_Write(&hi2c1, eeprom_address, eeprom_address, I2C_MEMADD_SIZE_8BIT, &data_to_write, 1, 100);
-
   for(;;)
-  { 
-    // target_encoder_value = 4096 * 1;
-    // osDelay(3000);
-    // target_encoder_value = 0;
-    // osDelay(3000);
+  {
+    osDelay(1);
   }
   /* USER CODE END StartMainStateLoop */
 }
@@ -1167,9 +977,6 @@ void StartMainStateLoop(void *argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-  if (htim->Instance == TIM6) {
-    foc_interrupt();
-  }
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM2) {

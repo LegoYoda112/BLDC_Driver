@@ -16,7 +16,7 @@ enum canBitrate {
 
 extern enum canBitrate can_bitrate;
 
-extern FDCAN_HandleTypeDef hfdcan1;
+// extern FDCAN_HandleTypeDef hfdcan1;
 
 extern bool rx_msg_led;
 
@@ -41,8 +41,8 @@ void process_cmd_rx(uint8_t RxData[]);
 void can_set_500kbs();
 void can_set_1000kbs();
 
-void send_slcan_string(FDCAN_RxHeaderTypeDef RxHeader, uint8_t *RxData);
+// void send_slcan_string(FDCAN_RxHeaderTypeDef RxHeader, uint8_t *RxData);
 
-void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
+// void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
 
 #endif

@@ -1,6 +1,7 @@
 #include "app.h"
 #include "comms.h"
 #include "sensors.h"
+#include "drive.h"
 #include "cmsis_os.h"
 #include "app_timers.h"
 
@@ -15,15 +16,36 @@ void app_setup(){
     set_led_green_pwm(0.0f);
     set_led_blue_pwm(0.0f);
 
-    init_and_start_can();
+    // Setup comms
+    // init_and_start_can();
 
+    // Setup sensors
     set_encoder_absolute_offset();
+
+    start_ADC_DMA();
+
+
+    // Setup DRIVE
+    start_drive_PWM();
+
+    enable_DRV();
+
+    set_duty_phase_A(20);
+    set_duty_phase_B(0);
+    set_duty_phase_C(0);
+
+    HAL_GPIO_WritePin(INLX_GPIO_Port, INLX_Pin, 1);
 }
 
 
 int led_clock = 0;
 void app_status_led_task(){
-    led_clock += 1;
+
+    // volatile uint8_t a = HAL_ADC_GetValue(&hadc2);
+    // volatile uint8_t b = HAL_ADC_GetValue(&hadc2);
+    // volatile uint8_t c = HAL_ADC_GetValue(&hadc2);
+
+    // led_clock += 1;
     switch (app_state){
         case app_state_idle:
             // led_hsv(150.0f, 1.0f, sin(led_clock / 30.0f) * 0.2f + 0.2f);

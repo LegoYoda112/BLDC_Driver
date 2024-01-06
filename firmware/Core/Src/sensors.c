@@ -2,7 +2,7 @@
 #include "app_timers.h"
 
 uint32_t adc1_dma[2];
-uint32_t adc2_dma[3];
+uint16_t adc2_dma[3];
 uint32_t adc2_calib_offset[3];
 
 float current_sense[3];
@@ -69,6 +69,7 @@ void start_ADC_DMA(){
 
   // Start adc2 DMA (phase current shunts)
   HAL_ADC_Start_DMA(&hadc2, adc2_dma, 3);
+  // HAL_ADC_Start_IT(&hadc2);
 }
 
 // Update and get v motor

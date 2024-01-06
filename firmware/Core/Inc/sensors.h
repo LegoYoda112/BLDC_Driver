@@ -53,7 +53,7 @@ void set_encoder_absolute_offset();
  * 
  * 
  */
-void start_ADC_DMA();
+void start_ADC();
 
 /**
  * @brief Runs calibration on the DRV current shunt amps.
@@ -68,5 +68,7 @@ void calibrate_DRV_amps();
  * 
  */
 void update_current_sense();
+
+float get_vmotor();
 
 #endif

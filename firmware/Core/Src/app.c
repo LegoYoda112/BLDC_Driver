@@ -1,36 +1,30 @@
 #include "app.h"
-#include "comms.h"
-#include "sensors.h"
-#include "drive.h"
-#include "cmsis_os.h"
-#include "app_timers.h"
 
 enum appState app_state = app_state_idle;
 
 void app_setup(){
-    // Start wait timer
+
+    // Start and calibrate analog 
+    // (at beginning since calibration works best with )
+    start_ADC();
+
+    // Enable DRV
+    enable_DRV();
+    calibrate_DRV_amps();
+
+    // Start timers
     start_app_timers();
     start_led_timers();
+    start_drive_timers();
 
-    set_led_red_pwm(0.0f);
-    set_led_green_pwm(0.0f);
-    set_led_blue_pwm(0.0f);
-
-    // Setup comms
+    // Start comms
     // init_and_start_can();
 
-    // Setup sensors
+    // Set encoder offset
     set_encoder_absolute_offset();
 
-    start_ADC_DMA();
-
-
     // Setup DRIVE
-    start_drive_PWM();
-
-    enable_DRV();
-
-    set_duty_phase_A(20);
+    set_duty_phase_A(0);
     set_duty_phase_B(0);
     set_duty_phase_C(0);
 
@@ -41,11 +35,9 @@ void app_setup(){
 int led_clock = 0;
 void app_status_led_task(){
 
-    // volatile uint8_t a = HAL_ADC_GetValue(&hadc2);
-    // volatile uint8_t b = HAL_ADC_GetValue(&hadc2);
-    // volatile uint8_t c = HAL_ADC_GetValue(&hadc2);
+    estimate_phase_resistance(5.0);
 
-    // led_clock += 1;
+    led_clock += 1;
     switch (app_state){
         case app_state_idle:
             // led_hsv(150.0f, 1.0f, sin(led_clock / 30.0f) * 0.2f + 0.2f);

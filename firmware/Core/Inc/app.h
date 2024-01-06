@@ -2,7 +2,14 @@
 #define APP_H
 
 #include "main.h"
+
+#include "cmsis_os.h"
+
 #include "led.h"
+#include "comms.h"
+#include "sensors.h"
+#include "drive.h"
+#include "app_timers.h"
 
 extern ADC_HandleTypeDef hadc2;
 

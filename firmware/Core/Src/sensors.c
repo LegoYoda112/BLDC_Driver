@@ -63,24 +63,35 @@ void set_encoder_absolute_offset(){
 
 }
 
-void start_ADC_DMA(){
-  // Start adc1 DMA (vmot + temp)
+// Calibrate provided ADC
+// TODO: Handle errors
+void calibrate_ADC(ADC_HandleTypeDef *hadc){
+  if(HAL_ADCEx_Calibration_Start(hadc, ADC_SINGLE_ENDED) != HAL_OK){
+    Error_Handler();
+  }
+}
+
+void start_ADC(){
+
+  // Calibrate and start adc1 DMA (vmot + temp)
+  calibrate_ADC(&hadc1);
   HAL_ADC_Start_DMA(&hadc1, adc1_dma, 2);
 
-  // Start adc2 DMA (phase current shunts)
+  // Calibrate and start adc2 DMA (phase current shunts)
+  calibrate_ADC(&hadc2);
   HAL_ADC_Start_DMA(&hadc2, adc2_dma, 3);
-  // HAL_ADC_Start_IT(&hadc2);
 }
 
 // Update and get v motor
 float get_vmotor(){
-  float R1 = 100.0f; // kOhms
-  float R2 = 6.8f; // KOhms
-  float adc_constant = 3.3f / 4096.0f * 1.00f;
-  float adc_v = adc1_dma[0] * adc_constant;
-  // volatile float voltage_divider_const = 
-  v_motor_mv = (adc_v * ((R1 + R2) / R2)) * 1000;
-  return v_motor_mv;
+  // float R1 = 100.0f; // kOhms
+  // float R2 = 6.8f; // KOhms
+  // float adc_constant = 3.3f / 4096.0f * 1.00f;
+  // float adc_v = adc1_dma[0] * adc_constant;
+  // // volatile float voltage_divider_const = 
+  // v_motor_mv = (adc_v * ((R1 + R2) / R2));
+  volatile float v_motor = (adc1_dma[0]*0.000806f / 0.0637f)*1.0f;
+  return v_motor;
 }
 
 void calibrate_DRV_amps(){
@@ -93,23 +104,23 @@ void calibrate_DRV_amps(){
 
     // Perform external calibration
     // TODO: Have average over a set of samples
-    adc2_calib_offset[0] = 0;
-    adc2_calib_offset[1] = 0;
-    adc2_calib_offset[2] = 0;
+    // adc2_calib_offset[0] = 0;
+    // adc2_calib_offset[1] = 0;
+    // adc2_calib_offset[2] = 0;
 
     // Disable calibration
     HAL_GPIO_WritePin(DRV_CAL_GPIO_Port, DRV_CAL_Pin, 0);
 
-    int num_samples = 200;
-    for(int i = 0; i < num_samples; i++){
-      adc2_calib_offset[0] += adc2_dma[0];
-      adc2_calib_offset[1] += adc2_dma[1];
-      adc2_calib_offset[2] += adc2_dma[0];
-      HAL_Delay(1);
-    }
-    adc2_calib_offset[0] /= num_samples;
-    adc2_calib_offset[1] /= num_samples;
-    adc2_calib_offset[2] /= num_samples;
+    // int num_samples = 200;
+    // for(int i = 0; i < num_samples; i++){
+    //   adc2_calib_offset[0] += adc2_dma[0];
+    //   adc2_calib_offset[1] += adc2_dma[1];
+    //   adc2_calib_offset[2] += adc2_dma[0];
+    //   HAL_Delay(1);
+    // }
+    // adc2_calib_offset[0] /= num_samples;
+    // adc2_calib_offset[1] /= num_samples;
+    // adc2_calib_offset[2] /= num_samples;
 }
 
 void update_current_sense(){

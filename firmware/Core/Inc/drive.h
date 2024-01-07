@@ -37,7 +37,7 @@ enum DriveState {
 extern enum DriveState drive_state;
 
 // If true, FOC is allowed to control motor phases
-extern bool foc_activ;
+extern bool foc_active;
 
 //////////// VARIABLES
 extern int max_motor_current_mAmps;
@@ -47,6 +47,7 @@ extern int estimated_resistance_mOhms;
 //////////// EXTERNS
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim4;
+extern TIM_HandleTypeDef htim6;
 
 
 //////////// FUNCTIONS

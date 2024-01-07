@@ -1,7 +1,7 @@
 #include "sensors.h"
 #include "app_timers.h"
 
-uint32_t adc1_dma[2];
+uint16_t adc1_dma[2];
 uint16_t adc2_dma[3];
 uint32_t adc2_calib_offset[3];
 

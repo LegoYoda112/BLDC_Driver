@@ -43,14 +43,12 @@ uint8_t get_sin_lut_value_index_safe(uint8_t position){
 // Returns sin(x) * value/2 + value/2
 uint8_t mult_sin_lut_uint8(uint8_t position, uint8_t value){
     // (uint8 * uint8) / 256
-
     uint16_t mult_value = (uint16_t)value * get_sin_lut_value_index_safe(position);
     return (uint8_t)(mult_value >> 8);
 }
 
 int16_t mult_sin_lut_int16(uint8_t position, int16_t value){
-    // (uint8 * uint8) / 256
-
+    // (uint16 * uint8) / 256
     int32_t mult_value = (value * (get_sin_lut_value_index_safe(position) - 128)) * 2;
     return (int16_t)(mult_value >> 8);
 }

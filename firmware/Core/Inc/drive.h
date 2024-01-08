@@ -53,7 +53,9 @@ extern TIM_HandleTypeDef htim6;
 //////////// FUNCTIONS
 void start_drive_timers();
 
+// Enable DRV chip by setting ENABLE pin
 void enable_DRV();
+// Disable DRV chip by setting ENABLE pin
 void disable_DRV();
 
 /**

@@ -79,7 +79,7 @@ void foc_interrupt(){
     // Generate current setpoint 
     // TODO: Split this out into another timer interrupt
     current_setpoint_mA = -(position_setpoint - enc_angle_int) * 20;
-    current_setpoint_limit_mA = 700;
+    current_setpoint_limit_mA = 1000; // 1A current setpoint for testing
     // Enforce limits on current
     enforce_bound(&current_setpoint_mA, -current_setpoint_limit_mA, current_setpoint_limit_mA);
 
@@ -97,10 +97,14 @@ void foc_interrupt(){
     // Find minimum voltage to offset phase voltages to be all positive
     // Might be worth experimenting with centering phases around V_supply/2 to avoid this
     // there might be additional consequences
-    int16_t min_voltage_mV = min3(voltage_a_mV, voltage_b_mV, voltage_c_mV);
+    int16_t min_voltage_mV = int16_min3(voltage_a_mV, voltage_b_mV, voltage_c_mV);
 
-    // TODO, convert to setting actual voltages instead of duty cycle
-    set_duty_phases(voltage_a_mV - min_voltage_mV, voltage_b_mV - min_voltage_mV, voltage_c_mV - min_voltage_mV);
+
+    // If FOC is enabled, set voltages
+    if(foc_active){
+        // TODO, convert to setting actual voltages instead of duty cycle
+        set_duty_phases(voltage_a_mV - min_voltage_mV, voltage_b_mV - min_voltage_mV, voltage_c_mV - min_voltage_mV);
+    }
 }
 
 void clarke_transform(int16_t A, int16_t B, int16_t C, int16_t *alpha, int16_t *beta){

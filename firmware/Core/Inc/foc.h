@@ -74,7 +74,6 @@ void inverse_clarke_transform(int16_t alpha, int16_t beta, int16_t *a, int16_t *
  */
 void inverse_park_transform(int16_t d, int16_t q, uint8_t angle, int16_t *alpha, int16_t *beta);
 
-int16_t min3(int16_t a, int16_t b, int16_t c);
 
 void apply_duty_at_electrical_angle_int(uint8_t angle, uint8_t magnitude);
 

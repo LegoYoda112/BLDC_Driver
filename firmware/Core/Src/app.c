@@ -3,7 +3,6 @@
 enum appState app_state = app_state_idle;
 
 void app_setup(){
-
     // Start and calibrate analog 
     // (at beginning since calibration works best with )
     start_ADC();
@@ -13,6 +12,7 @@ void app_setup(){
     calibrate_DRV_amps();
 
     // Start timers
+    // TODO: Does this make sense
     start_app_timers();
     start_led_timers();
     start_drive_timers();
@@ -24,13 +24,14 @@ void app_setup(){
     set_encoder_absolute_offset();
 
     // Setup DRIVE
-    set_duty_phase_A(0);
-    set_duty_phase_B(0);
-    set_duty_phase_C(0);
-
+    set_duty_phases(0, 0, 0);
+    // Enable low side gates
+    // TODO: Add this into a "drive enable/disable" function
     HAL_GPIO_WritePin(INLX_GPIO_Port, INLX_Pin, 1);
 
     // 10kHz motor commutation interrupt
+    // TODO: Add this back into drive timers?
+    // Can't quite remember why it's here
     HAL_TIM_Base_Start_IT(&htim6);
 }
 

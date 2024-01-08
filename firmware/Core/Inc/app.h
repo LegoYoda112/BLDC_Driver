@@ -25,7 +25,6 @@ extern int16_t current_A_mA_filtered;
 extern int16_t current_B_mA_filtered;
 extern int16_t current_C_mA_filtered;
 
-
 extern int16_t current_Alpha_mA;
 extern int16_t current_Beta_mA;
 

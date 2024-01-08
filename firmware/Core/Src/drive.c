@@ -32,7 +32,6 @@ void disable_DRV(){
 
 void enable_foc_loop(){
     foc_active = true;
-    set_duty_phases(0, 0, 0);
 }
 
 void disable_foc_loop(){

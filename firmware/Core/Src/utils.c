@@ -22,10 +22,10 @@ int bound(int value, int min, int max){
 }
 
 bool enforce_bound(int *value, int min, int max){
-    if(&value < min){
+    if(*value < min){
         *value = min;
         return true;
-    }else if(&value > max){
+    }else if(*value > max){
         *value = max;
         return true;
     }else{

@@ -4,6 +4,9 @@
 #include "main.h"
 #include "drive.h"
 #include "sensors.h"
+#include "math.h"
+#include "trig_luts.h"
+#include "utils.h"
 
 
 extern uint16_t vmotor_mV;
@@ -19,16 +22,57 @@ extern int16_t angle;
 
 
 /**
- * @brief Runs required FOC functions on TIM6 interrupt
+ * @brief Runs required FOC functions on TIM6 interrupt at 10KHz
  * 
  */
 void foc_interrupt();
 
+/**
+ * @brief Power invariant Clarke transform, converts from a 3-phase coordinate system to orthogonal coordinates
+ * (with Alpha in line with phase A)
+ * 
+ * @param A Phase A value
+ * @param B Phase B value
+ * @param C Phase C value
+ * @param alpha Pointer to Alpha value to be set
+ * @param beta Pointer to Beta value to be set
+ */
 void clarke_transform(int16_t A, int16_t B, int16_t C, int16_t *alpha, int16_t *beta);
+
+/**
+ * @brief Park transform, converts from stator-aligned orthogonal coordinates to rotor aligned orthogonal coordinates.
+ * D is aligned "normal" and Q is aligned "tangent".
+ * 
+ * @param alpha Alpha value
+ * @param beta Beta value
+ * @param angle Electrical angle as a 8-bit integer (255 = 2pi)
+ * @param d Pointer to D value to be set
+ * @param q Pointer to Q value to be set
+ */
 void park_transform(int16_t alpha, int16_t beta, uint8_t angle, int16_t *d, int16_t *q);
 
+/**
+ * @brief Inverse power invariant Clarke transform. See also `clarke_transform()`
+ * 
+ * @param alpha Alpha value
+ * @param beta Beta value
+ * @param a Pointer to A-phase value to be set
+ * @param b Pointer to A-phase value to be set
+ * @param c Pointer to A-phase value to be set
+ * 
+ */
 void inverse_clarke_transform(int16_t alpha, int16_t beta, int16_t *a, int16_t *b, int16_t *c);
-void inverse_park_transform(int16_t V_d, int16_t V_q, uint8_t angle, int16_t *V_alpha, int16_t *V_beta);
+
+/**
+ * @brief Inverse Park transform. See also `park_transform()`
+ * 
+ * @param d 
+ * @param q 
+ * @param angle 
+ * @param alpha 
+ * @param beta 
+ */
+void inverse_park_transform(int16_t d, int16_t q, uint8_t angle, int16_t *alpha, int16_t *beta);
 
 int16_t min3(int16_t a, int16_t b, int16_t c);
 

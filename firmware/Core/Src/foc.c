@@ -8,7 +8,8 @@ uint16_t voltage_supply_mV;
 
 // Current Variables
 int16_t current_setpoint_limit_mA = 1000;
-int16_t current_setpoint_mA = 0;
+int16_t current_Q_setpoint_mA = 0;
+int16_t current_D_setpoint_mA = 0;
 
 int16_t current_A_mA = 0;
 int16_t current_B_mA = 0;
@@ -51,6 +52,11 @@ uint8_t electrical_angle_offset = -40;
 
 int position_setpoint = 0;
 
+void set_current_setpoints(int D_setpoint_mA, int Q_setpoint_mA){
+    current_Q_setpoint_mA = Q_setpoint_mA;
+    current_D_setpoint_mA = D_setpoint_mA;
+}
+
 void foc_interrupt(){
     // Calculate electrical angle as a uint8
     // 0 is aligned with phase A
@@ -78,17 +84,17 @@ void foc_interrupt(){
 
     // Generate current setpoint 
     // TODO: Split this out into another timer interrupt
-    current_setpoint_mA = -(position_setpoint - enc_angle_int) * 20;
+    current_Q_setpoint_mA = -(position_setpoint - enc_angle_int) * 20;
     current_setpoint_limit_mA = 1000; // 1A current setpoint for testing
     // Enforce limits on current
-    enforce_bound(&current_setpoint_mA, -current_setpoint_limit_mA, current_setpoint_limit_mA);
+    enforce_bound(&current_Q_setpoint_mA, -current_setpoint_limit_mA, current_setpoint_limit_mA);
 
     // Q current P loop
     // TODO: Add an integral term?
-    voltage_Q_mV = (current_Q_mA - current_setpoint_mA) * current_P_gain;
+    voltage_Q_mV = (current_Q_mA - current_Q_setpoint_mA) * current_P_gain;
     enforce_bound(&voltage_Q_mV, -maximum_duty, maximum_duty);
     // D current P loop
-    voltage_D_mV = -current_D_mA * current_P_gain;
+    voltage_D_mV = -(current_D_mA - current_D_setpoint_mA)  * current_P_gain;
     enforce_bound(&voltage_D_mV, -maximum_duty, maximum_duty);
 
     // Perform inverse park and clarke transform to convert from rotor-centric voltage into phase voltages

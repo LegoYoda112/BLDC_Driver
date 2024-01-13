@@ -20,6 +20,16 @@ extern int16_t current_Beta_mA;
 
 extern int16_t angle;
 
+/**
+ * @brief Set target current setpoints in rotor space
+ * 
+ * @param D_setpoint_mA D "normal current"
+ * @param Q_setpoint_mA Q "tangent current"
+ * 
+ * @note In normal operation, D should be set to 0, and Q set to the desired current
+ * based on required torque.
+ */
+void set_current_setpoints(int D_setpoint_mA, int Q_setpoint_mA);
 
 /**
  * @brief Runs required FOC functions on TIM6 interrupt at 10KHz

@@ -13,9 +13,9 @@ void app_setup(){
 
     // Start timers
     // TODO: Does this make sense
-    start_app_timers();
     start_led_timers();
     start_drive_timers();
+    start_app_timers();
 
     // Start comms
     // init_and_start_can();

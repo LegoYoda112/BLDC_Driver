@@ -34,8 +34,28 @@ extern int16_t current_D_mA;
 extern int16_t angle;
 extern uint8_t electrical_angle;
 
-extern position_setpoint;
+extern int position_setpoint;
 
+/**
+ * @brief Run during MCU init to initialise various perihperals.
+ * 
+ * @note Order of operations
+ * - Starts ADC
+ * - Enables the DRV chip and calibrates amps
+ * - Start timers
+ * - Sets absolute encoder offset
+ * - Zero out phase PWM
+ * - Enable low side gates
+ * - Start FOC interrupt
+ */
 void app_setup();
+
+/**
+ * @brief RTOS task to run status led
+ * 
+ */
+void app_status_led_task(){
+
+}
 
 #endif

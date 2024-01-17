@@ -12,10 +12,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
     - name: Install build tools
-      run: sudo apt update && sudo apt install -y gcc-arm-none-eabi gdb-arm-none-eabi
-      
+      run: | 
+        sudo apt update 
+        sudo apt install -y gcc-arm-none-eabi gdb-arm-none-eabi
     - name: Build bootloader 
-      run: cd bootloader && make -j
+      run: |
+        cd bootloader
+        make -j
+    - name: Archive build files
+      uses: actions/upload-artifact@v3
+      with:
+            name: build-elf
+            path: .\build\50x50_Bootloader.elf
+    

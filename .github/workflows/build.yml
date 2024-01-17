@@ -27,5 +27,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
             name: build-elf
-            path: .\build\50x50_Bootloader.elf
+            path: bootloader\build\50x50_Bootloader.elf
     

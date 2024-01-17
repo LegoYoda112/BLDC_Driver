@@ -23,9 +23,10 @@ jobs:
       run: |
         cd bootloader
         make -j
+        cd ..
     - name: Archive build files
       uses: actions/upload-artifact@v3
       with:
             name: build-elf
-            path: bootloader\build\50x50_Bootloader.elf
+            path: bootloader/build/50x50_Bootloader.elf
     

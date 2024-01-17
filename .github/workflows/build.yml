@@ -1,0 +1,21 @@
+name: Makefile CI
+
+on:
+  push:
+    branches: [ "build-test" ]
+  pull_request:
+    branches: [ "build-test" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install build tools
+      run: sudo apt install -y gcc-arm-none-eabi gdb-arm-none-eabi
+      
+    - name: Build bootloader 
+      run: cd bootloader && make -j

@@ -2,9 +2,9 @@ name: Makefile CI
 
 on:
   push:
-    branches: [ "dev-build" ]
+    branches: [ "main", "dev-build" ]
   pull_request:
-    branches: [ "dev-bulid" ]
+    branches: [ "main", "dev-bulid" ]
 
 jobs:
   build:
@@ -24,9 +24,15 @@ jobs:
         cd bootloader
         make -j
         cd ..
+    - name: Build firmware
+      run: |
+        cd firmware
+        make -j
+        cd ..
+
     - name: Archive build files
       uses: actions/upload-artifact@v3
       with:
-            name: build-elf
-            path: bootloader/build/50x50_Bootloader.elf
+            name: 50x50_Bootloader.hex
+            path: bootloader/build/50x50_Bootloader.hex
     

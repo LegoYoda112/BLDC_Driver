@@ -58,6 +58,7 @@ Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_cortex.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_dma.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_dma_ex.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_exti.c \
+Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_fdcan.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_flash.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_flash_ex.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_flash_ramfunc.c \
@@ -231,7 +232,6 @@ vpath %.cpp $(sort $(dir $(CPP_SOURCES)))
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
 
-# list of ASM program objects
 # list of ASM program objects
 UPPER_CASE_ASM_SOURCES = $(filter %.S,$(ASM_SOURCES))
 LOWER_CASE_ASM_SOURCES = $(filter %.s,$(ASM_SOURCES))

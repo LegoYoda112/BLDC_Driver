@@ -18,7 +18,7 @@ void app_setup(){
     start_app_timers();
 
     // Start comms
-    // init_and_start_can();
+    init_and_start_can();
 
     // Set encoder offset
     set_encoder_absolute_offset();
@@ -47,7 +47,7 @@ void app_status_led_task(){
     switch (app_state){
         case app_state_idle:
             // led_hsv(150.0f, 1.0f, sin(led_clock / 30.0f) * 0.2f + 0.2f);
-            led_hsv((enc_angle_int)/(4096.0f / 360.0f) + 10000.0f, 1.0f, sin(led_clock / 20.0f) * 0.3f + 0.4f);
+            led_hsv((enc_angle_int)/(4096.0f / 360.0f) + 10000.0f, 1.0f, sin(led_clock / 100.0f) * 0.3f + 0.4f);
             break;
         case app_state_active:
             if(rx_msg_led){
@@ -63,13 +63,26 @@ void app_status_led_task(){
 
     // sprintf(str, "%d %d %d %d %d %d %d %d\r", electrical_angle, current_A_mA_filtered, current_B_mA_filtered, current_C_mA_filtered, current_Alpha_mA, current_Beta_mA,  current_D_mA, current_Q_mA);
     // sprintf(str, "%+05d %+05d\r", enc_angle_int, position_setpoint);
-    // sprintf(str, "%+05d %+05d\r", electrical_angle, (uint8_t) angle);
+    // sprintf(str, "%+05d %+05d\r", electrical_angle, (uint8_t) position_setpoint);
     // sprintf(str, "%+05d %+05d %+05d\r", (uint8_t)angle, current_Alpha_mA, current_Beta_mA);
     // sprintf(str, "%+05d %+05d\r", current_D_mA, current_Q_mA);
     // CDC_Transmit_FS(str, strlen(str));
 
-    position_setpoint = sin(led_clock / 150.0f) * 4000.0f;
+    // position_setpoint = sin(led_clock / 500.0f) * 4000.0f;
+    // position_setpoint = 0;
 
-    osDelay(1);
+    // position_setpoint = (int)(sin(led_clock / 5000.0f) *  8000.0f)
+    enable_foc_loop();
+    // position_setpoint = led_clock;
+
+    // apply_duty_at_electrical_angle_int(position_setpoint, 30);
+    // position_setpoint += 1;
+
+    // set_duty_phase_A(0);
+    // set_duty_phase_B(0);
+    // set_duty_phase_C(0);
+    // // angle += 1;
+
+    osDelay(5);
     // angle += 1;
 }

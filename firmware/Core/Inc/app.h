@@ -50,12 +50,10 @@ extern int position_setpoint;
  */
 void app_setup();
 
-/**
+/**s
  * @brief RTOS task to run status led
  * 
  */
-void app_status_led_task(){
-
-}
+void app_status_led_task();
 
 #endif

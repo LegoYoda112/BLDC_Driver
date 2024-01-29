@@ -6,17 +6,21 @@
 
 uint16_t voltage_supply_mV;
 
+
+bool position_control_enabled = false;
+
 // Current Variables
-int16_t current_setpoint_limit_mA = 1000;
-int16_t current_Q_setpoint_mA = 0;
-int16_t current_D_setpoint_mA = 0;
+int position_setpoint_filtered = 0;
+int current_setpoint_limit_mA = 1000;
+int current_Q_setpoint_mA = 0;
+int current_D_setpoint_mA = 0;
 
 int16_t current_A_mA = 0;
 int16_t current_B_mA = 0;
 int16_t current_C_mA = 0;
 
-int16_t current_A_offset_mA = 2;
-int16_t current_C_offset_mA = -5;
+int16_t current_A_offset_mA = 0;
+int16_t current_C_offset_mA = -51;
 
 int16_t current_A_mA_filtered = 0;
 int16_t current_B_mA_filtered = 0;
@@ -44,11 +48,11 @@ int16_t voltage_c_mV = 0;
 
 // Gains
 // TODO: Choose this based on motor resistance and inductance
-float current_P_gain = 0.05f;
+float current_P_gain = 0.02f;
 
 // Angle
 uint8_t electrical_angle = 0;
-uint8_t electrical_angle_offset = -40;
+uint8_t electrical_angle_offset = -39;
 
 int position_setpoint = 0;
 
@@ -61,7 +65,7 @@ void foc_interrupt(){
     // Calculate electrical angle as a uint8
     // 0 is aligned with phase A
     // 255 is just before wraparound
-    electrical_angle = -enc_angle_int % (4096 / 8) / 2 - electrical_angle_offset;
+    electrical_angle = enc_angle_int % (4096 / 8) / 2 - electrical_angle_offset;
 
     // Calculate motor voltage
     voltage_supply_mV = adc1_dma[0] * 13;
@@ -84,18 +88,32 @@ void foc_interrupt(){
 
     // Generate current setpoint 
     // TODO: Split this out into another timer interrupt
-    current_Q_setpoint_mA = -(position_setpoint - enc_angle_int) * 20;
-    current_setpoint_limit_mA = 1000; // 1A current setpoint for testing
+
+    if(position_control_enabled){
+        position_setpoint_filtered = 0.99f * position_setpoint_filtered + position_setpoint * 0.01f;
+        current_Q_setpoint_mA = 0.0f * current_Q_setpoint_mA + ((position_setpoint_filtered - enc_angle_int) * 20.0f) * 1.0f;
+    } else {
+        current_Q_setpoint_mA = 0;
+    }
+
+    current_setpoint_limit_mA = 10000; // 1A current setpoint for testing
+
+    // torque_setpoint = (position_setpoint - enc_angle_int) * 1.0f
+    // position_setpoint = bound( (int16_t) (position_setpoint - enc_angle_int) * 1.0f, -current_setpoint_limit_mA, current_setpoint_limit_mA);
+    // current_Q_setpoint_mA = -1000;
     // Enforce limits on current
-    enforce_bound(&current_Q_setpoint_mA, -current_setpoint_limit_mA, current_setpoint_limit_mA);
+    current_Q_setpoint_mA = bound(current_Q_setpoint_mA, -current_setpoint_limit_mA, current_setpoint_limit_mA);
 
     // Q current P loop
     // TODO: Add an integral term?
     voltage_Q_mV = (current_Q_mA - current_Q_setpoint_mA) * current_P_gain;
-    enforce_bound(&voltage_Q_mV, -maximum_duty, maximum_duty);
+    // voltage_Q_mV = -current_Q_setpoint_mA * 0.01f;
+    // voltage_Q_mV = 20;
+    voltage_Q_mV = (int16_t) bound(voltage_Q_mV, -200, 200);
     // D current P loop
     voltage_D_mV = -(current_D_mA - current_D_setpoint_mA)  * current_P_gain;
-    enforce_bound(&voltage_D_mV, -maximum_duty, maximum_duty);
+    // voltage_D_mV = 0;
+    voltage_D_mV = (int16_t) bound(voltage_D_mV, -200, 200);
 
     // Perform inverse park and clarke transform to convert from rotor-centric voltage into phase voltages
     inverse_park_transform(voltage_D_mV, voltage_Q_mV, electrical_angle, &voltage_Alpha_mV, &voltage_Beta_mV);
@@ -103,6 +121,7 @@ void foc_interrupt(){
     // Find minimum voltage to offset phase voltages to be all positive
     // Might be worth experimenting with centering phases around V_supply/2 to avoid this
     // there might be additional consequences
+
     int16_t min_voltage_mV = int16_min3(voltage_a_mV, voltage_b_mV, voltage_c_mV);
 
 

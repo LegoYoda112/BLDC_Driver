@@ -49,6 +49,8 @@ ADC_HandleTypeDef hadc2;
 DMA_HandleTypeDef hdma_adc1;
 DMA_HandleTypeDef hdma_adc2;
 
+FDCAN_HandleTypeDef hfdcan1;
+
 I2C_HandleTypeDef hi2c1;
 
 LPTIM_HandleTypeDef hlptim1;
@@ -97,6 +99,7 @@ static void MX_TIM15_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_LPTIM1_Init(void);
 static void MX_TIM7_Init(void);
+static void MX_FDCAN1_Init(void);
 void StartDefaultTask(void *argument);
 void StartStatusBlink(void *argument);
 void StartMainStateLoop(void *argument);
@@ -149,6 +152,7 @@ int main(void)
   MX_TIM6_Init();
   MX_LPTIM1_Init();
   MX_TIM7_Init();
+  MX_FDCAN1_Init();
   /* USER CODE BEGIN 2 */
   app_setup();
   /* USER CODE END 2 */
@@ -403,6 +407,49 @@ static void MX_ADC2_Init(void)
   /* USER CODE BEGIN ADC2_Init 2 */
 
   /* USER CODE END ADC2_Init 2 */
+
+}
+
+/**
+  * @brief FDCAN1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_FDCAN1_Init(void)
+{
+
+  /* USER CODE BEGIN FDCAN1_Init 0 */
+
+  /* USER CODE END FDCAN1_Init 0 */
+
+  /* USER CODE BEGIN FDCAN1_Init 1 */
+
+  /* USER CODE END FDCAN1_Init 1 */
+  hfdcan1.Instance = FDCAN1;
+  hfdcan1.Init.ClockDivider = FDCAN_CLOCK_DIV1;
+  hfdcan1.Init.FrameFormat = FDCAN_FRAME_CLASSIC;
+  hfdcan1.Init.Mode = FDCAN_MODE_NORMAL;
+  hfdcan1.Init.AutoRetransmission = ENABLE;
+  hfdcan1.Init.TransmitPause = ENABLE;
+  hfdcan1.Init.ProtocolException = ENABLE;
+  hfdcan1.Init.NominalPrescaler = 16;
+  hfdcan1.Init.NominalSyncJumpWidth = 1;
+  hfdcan1.Init.NominalTimeSeg1 = 15;
+  hfdcan1.Init.NominalTimeSeg2 = 2;
+  hfdcan1.Init.DataPrescaler = 1;
+  hfdcan1.Init.DataSyncJumpWidth = 1;
+  hfdcan1.Init.DataTimeSeg1 = 1;
+  hfdcan1.Init.DataTimeSeg2 = 1;
+  hfdcan1.Init.StdFiltersNbr = 0;
+  hfdcan1.Init.ExtFiltersNbr = 0;
+  hfdcan1.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
+  if (HAL_FDCAN_Init(&hfdcan1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN FDCAN1_Init 2 */
+
+  /* USER CODE END FDCAN1_Init 2 */
 
 }
 
@@ -832,7 +879,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, ENC_EN_Pin|DRV_EN_Pin|DRV_CAL_Pin|TEST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, ENC_EN_Pin|DRV_EN_Pin|DRV_CAL_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(INLX_GPIO_Port, INLX_Pin, GPIO_PIN_RESET);
@@ -843,8 +890,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ENC_EN_Pin DRV_EN_Pin DRV_CAL_Pin TEST_Pin */
-  GPIO_InitStruct.Pin = ENC_EN_Pin|DRV_EN_Pin|DRV_CAL_Pin|TEST_Pin;
+  /*Configure GPIO pins : ENC_EN_Pin DRV_EN_Pin DRV_CAL_Pin */
+  GPIO_InitStruct.Pin = ENC_EN_Pin|DRV_EN_Pin|DRV_CAL_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

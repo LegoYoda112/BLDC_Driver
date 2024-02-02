@@ -7,4 +7,6 @@ Firmware is highly in flux and this documentation is mostly a notepad for myself
 :maxdepth 1
 comms
 drive
+foc
+app
 ```

@@ -12,8 +12,8 @@
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
 
-extern uint32_t adc1_dma[2];
-extern uint32_t adc2_dma[3];
+extern uint16_t adc1_dma[2];
+extern uint16_t adc2_dma[3];
 
 extern uint16_t phase_resistance_mOhm[3];
 
@@ -53,7 +53,7 @@ void set_encoder_absolute_offset();
  * 
  * 
  */
-void start_ADC_DMA();
+void start_ADC();
 
 /**
  * @brief Runs calibration on the DRV current shunt amps.
@@ -68,5 +68,7 @@ void calibrate_DRV_amps();
  * 
  */
 void update_current_sense();
+
+float get_vmotor();
 
 #endif

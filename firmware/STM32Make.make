@@ -40,6 +40,8 @@ Core/Src/app.c \
 Core/Src/app_freertos.c \
 Core/Src/app_timers.c \
 Core/Src/comms.c \
+Core/Src/drive.c \
+Core/Src/foc.c \
 Core/Src/led.c \
 Core/Src/main.c \
 Core/Src/sensors.c \
@@ -47,6 +49,8 @@ Core/Src/stm32g4xx_hal_msp.c \
 Core/Src/stm32g4xx_hal_timebase_tim.c \
 Core/Src/stm32g4xx_it.c \
 Core/Src/system_stm32g4xx.c \
+Core/Src/trig_luts.c \
+Core/Src/utils.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc.c \
 Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_adc_ex.c \
@@ -228,7 +232,6 @@ vpath %.cpp $(sort $(dir $(CPP_SOURCES)))
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
 
-# list of ASM program objects
 # list of ASM program objects
 UPPER_CASE_ASM_SOURCES = $(filter %.S,$(ASM_SOURCES))
 LOWER_CASE_ASM_SOURCES = $(filter %.s,$(ASM_SOURCES))

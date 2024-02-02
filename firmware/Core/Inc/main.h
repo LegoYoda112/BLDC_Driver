@@ -73,12 +73,6 @@ void Error_Handler(void);
 #define LED_G_GPIO_Port GPIOA
 #define LED_B_Pin GPIO_PIN_4
 #define LED_B_GPIO_Port GPIOA
-#define SOA_Pin GPIO_PIN_6
-#define SOA_GPIO_Port GPIOA
-#define SOB_Pin GPIO_PIN_7
-#define SOB_GPIO_Port GPIOA
-#define SOC_Pin GPIO_PIN_4
-#define SOC_GPIO_Port GPIOC
 #define ENC_EN_Pin GPIO_PIN_0
 #define ENC_EN_GPIO_Port GPIOB
 #define IFA_Pin GPIO_PIN_1

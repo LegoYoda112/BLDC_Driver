@@ -4,8 +4,6 @@ Drive.c includes motor drive related functions,
 ## Variables
 ```{eval-rst}
 .. doxygenvariable:: enc_angle_int
-.. doxygenvariable:: target_encoder_value
-.. doxygenvariable:: electrical_angle
 .. doxygenvariable:: electrical_angle_offset
 ```
 

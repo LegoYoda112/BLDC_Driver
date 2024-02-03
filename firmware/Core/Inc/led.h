@@ -12,6 +12,9 @@ void set_led_red_pwm(float value);
 void set_led_green_pwm(float value);
 void set_led_blue_pwm(float value);
 
+void led_rgb(float R, float G, float B);
+void led_rgb_int(uint8_t R, uint8_t G, uint8_t B);
+
 void led_hsv(float H, float S, float V);
 
 #endif

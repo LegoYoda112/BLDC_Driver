@@ -57,6 +57,12 @@ void CAN_Transmit_Bool(bool value)
   CAN_Transmit_Array(array, 1);
 }
 
+void CAN_Transmit_Value_Bool(uint8_t value, bool boolean)
+{
+    uint8_t array[] = {value, boolean};
+    CAN_Transmit_Array(array, 2); 
+}
+
 void init_and_start_can()
 {
     // Set up CAN header
@@ -312,11 +318,12 @@ void handleRX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[])
     } else if (msg_type < 150) {
         handle_telemetry_RX(RxHeader, RxData);
     } else if (msg_type < 256) {
-    //   handle_parameter_RX(RxHeader, RxData);
+        handle_parameter_RX(RxHeader, RxData);
     }
   }
 }
 
+// Process ACTION can messages
 void handle_action_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
     int msg_type = RxData[0];
 
@@ -335,6 +342,8 @@ void handle_action_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
     }
 }
 
+
+// Process TELEMETRY can messages
 void handle_telemetry_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
     int msg_type = RxData[0];
 
@@ -362,6 +371,33 @@ void handle_telemetry_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
                             (current_C_mA_filtered) & 0xFF, 
                             (current_C_mA_filtered >> 8) & 0xFF};
         CAN_Transmit_Array(array, 7);
+    }
+}
+
+// Process PARAMETER can messages
+void handle_parameter_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
+    int msg_type = RxData[0];
+
+    // Single byte message is parameter request
+    uint8_t dlc = (RxHeader.DataLength / FDCAN_DLC_BYTES_1);
+    bool param_set = dlc > 1;
+
+    if(msg_type == PARAM_LED_COLOR){
+        if(dlc == 4){
+            run_LED_colors[0] = RxData[1];
+            run_LED_colors[1] = RxData[2];
+            run_LED_colors[2] = RxData[3];
+            CAN_Transmit_Value_Bool(PARAM_LED_COLOR, true);
+        } else if(dlc == 1){
+            uint8_t send_array[] = {
+                PARAM_LED_COLOR,
+                run_LED_colors[0],
+                run_LED_colors[1],
+                run_LED_colors[2]};
+            CAN_Transmit_Array(send_array, 4);
+        } else {
+            CAN_Transmit_Value_Bool(PARAM_LED_COLOR, false);
+        }
     }
 }
 

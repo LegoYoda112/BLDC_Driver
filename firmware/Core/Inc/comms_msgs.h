@@ -27,3 +27,9 @@
 // DEF [V, V]
 // NAME Supply voltage reading
 // UNIT mV
+
+
+//////////// PARAMETERS
+#define PARAM_LED_COLOR 150
+// DEF [R, G, B]
+// NAME Motor run LED color

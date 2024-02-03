@@ -20,7 +20,7 @@ extern int16_t current_Beta_mA;
 
 extern int16_t angle;
 
-int16_t electrical_angle_offset;
+extern uint8_t electrical_angle_offset;
 
 /**
  * @brief Set target current setpoints in rotor space

@@ -7,7 +7,6 @@ void start_led_timers(){
     HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_2);
 }
 
-
 const uint16_t R_LED_MAX = 200;
 void set_led_red_pwm(float value){
   TIM15->CCR1 = (value * R_LED_MAX);
@@ -21,6 +20,18 @@ void set_led_green_pwm(float value){
 const uint16_t B_LED_MAX = 70;
 void set_led_blue_pwm(float value){
   TIM3->CCR2 = (value * B_LED_MAX);
+}
+
+void led_rgb(float R, float G, float B){
+  set_led_red_pwm(R);
+  set_led_green_pwm(G);
+  set_led_blue_pwm(B);
+}
+
+void led_rgb_int(uint8_t R, uint8_t G, uint8_t B){
+  set_led_red_pwm(R / 255.0f);
+  set_led_green_pwm(G / 255.0f);
+  set_led_blue_pwm(B / 255.0f);
 }
 
 void led_hsv(float H, float S, float V){

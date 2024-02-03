@@ -17,6 +17,8 @@ extern int16_t current_C_mA_filtered;
 
 extern position_control_enabled;
 
+extern uint8_t run_LED_colors[];
+
 enum canBitrate {
     _500Kbs = 6,
     _1000Kbs = 8

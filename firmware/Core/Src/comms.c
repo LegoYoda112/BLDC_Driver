@@ -65,6 +65,9 @@ void CAN_Transmit_Value_Bool(uint8_t value, bool boolean)
 
 void init_and_start_can()
 {
+    // Set unique hardware identifier
+    set_32bit_uid();
+
     // Set up CAN header
     TxHeader.Identifier = device_can_id;
     TxHeader.IdType = FDCAN_STANDARD_ID;
@@ -84,6 +87,8 @@ void init_and_start_can()
     sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
     sFilterConfig.FilterID1 = 0x00;
     sFilterConfig.FilterID2 = 0x01;
+
+    device_can_id = 10 + (get_dip(1) | get_dip(2) << 1);
 
     if (HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig) != HAL_OK)
     {
@@ -195,12 +200,14 @@ void process_USB_rx(uint8_t *Buf, uint32_t buffer_length)
         if (Buf[0] == 't')
         {
             strncpy(id_substring, Buf + 1, 3);
+            id_substring[3] = '\0';
             TxHeader.IdType = FDCAN_STANDARD_ID;
             dlc = Buf[4] - '0';
         }
         else
         {
             strncpy(id_substring, Buf + 1, 11);
+            id_substring[11] = '\0';
             TxHeader.IdType = FDCAN_EXTENDED_ID;
             dlc = Buf[9] - '0';
             // TODO: do this
@@ -212,6 +219,7 @@ void process_USB_rx(uint8_t *Buf, uint32_t buffer_length)
         for (int i = 0; i < dlc; i++)
         {
             char byte_substring[3];
+            byte_substring[2] = '\0';
             strncpy(byte_substring, Buf + 1 + 4 + i * 2, 2);
             TxData[i] = strtol(byte_substring, NULL, 16);
         }
@@ -219,11 +227,12 @@ void process_USB_rx(uint8_t *Buf, uint32_t buffer_length)
         // Fake loopback
         // send_slcan_string(TxHeader, TxData);
 
-        RxHeader = convert_tx_header(&TxHeader);
-        handleRX(RxHeader, TxData);
         slcan_open = false;
         CAN_Transmit_Safe(&TxHeader, TxData);
         slcan_open = true;
+
+        RxHeader = convert_tx_header(&TxHeader);
+        handleRX(RxHeader, TxData);
     }
 }
 
@@ -298,6 +307,25 @@ void send_slcan_string(FDCAN_RxHeaderTypeDef RxHeader, uint8_t *RxData)
 
 
 
+// UID telemetry message
+void telem_ID_TX(){
+  TxHeader.Identifier = device_can_id;
+
+  TxHeader.DataLength = FDCAN_DLC_BYTES_6;
+  
+  TxData[0] = DIAGNOSTIC_UID_ID;
+  TxData[1] = DEVICE_TYPE_ID;
+
+  // Send 32 bit unique ID
+  TxData[2] = device_uid & 0xFF;
+  TxData[3] = (device_uid >> 8) & 0xFF;
+  TxData[4] = (device_uid >> 16) & 0xFF;
+  TxData[5] = (device_uid >> 24) & 0xFF;
+
+  CAN_Transmit_Safe(&TxHeader, TxData);
+}
+
+
 
 
 
@@ -307,12 +335,12 @@ void handleRX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[])
   volatile int msg_type = RxData[0];
 
   if(RxHeader.Identifier == 0){ // Catch system messages
-    // handle_system_RX(RxHeader, RxData);
+    handle_system_RX(RxHeader, RxData);
   } else if(RxHeader.Identifier == device_can_id){ // Handle device messages
     int msg_type = RxData[0];
 
     if(msg_type < 20){
-    //   handle_diagnostic_RX(RxHeader, RxData);
+        handle_diagnostic_RX(RxHeader, RxData);
     } else if (msg_type < 100) {
         handle_action_RX(RxHeader, RxData);
     } else if (msg_type < 150) {
@@ -320,6 +348,32 @@ void handleRX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[])
     } else if (msg_type < 256) {
         handle_parameter_RX(RxHeader, RxData);
     }
+  }
+}
+
+void handle_system_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
+  int msg_type = RxData[0];
+
+  if(msg_type == SYS_LIST_ALL_ID){
+    osDelay(1); // Add a bit of randomness to help deconflict devices with the same ID, not sure this is still needed
+    telem_ID_TX();
+  }
+
+  if(msg_type == SYS_HARD_RESET_ALL_ID){
+    HAL_NVIC_SystemReset();
+  }
+}
+
+void handle_diagnostic_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
+  int msg_type = RxData[0];
+
+  if(msg_type == DIAGNOSTIC_UID_ID && RxHeader.DataLength == FDCAN_DLC_BYTES_1) {
+    telem_ID_TX();
+    return;
+  }
+
+  if(msg_type == DIAGNOSTIC_HARD_RESET_ID && RxHeader.DataLength == FDCAN_DLC_BYTES_1){ // ==== HARD RESET
+    HAL_NVIC_SystemReset();
   }
 }
 
@@ -339,6 +393,57 @@ void handle_action_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
         }
 
         position_setpoint = setpoint;
+    }
+
+    if(msg_type == ACTION_REQUEST_STATE_CHANGE){
+        enum DriveState new_state = RxData[1];
+
+
+        // Error -> Disabled
+        // Also clears error
+        if(new_state == drive_state_disabled && drive_state == drive_state_error){
+            drive_state = drive_state_disabled;
+            drive_error = drive_error_none;
+        }
+
+        // Disabled -> Encoder calibration
+        if(new_state == drive_state_encoder_calibration && drive_state == drive_state_disabled){
+            drive_state = drive_state_encoder_calibration;
+        }
+
+        // Disabled -> Resistance estimation
+        if(new_state == drive_state_resistance_estimation && drive_state == drive_state_disabled){
+            drive_state = drive_state_resistance_estimation;
+        }
+
+        // Disabled -> Anti cogging calibration
+        if(new_state == drive_state_anti_cogging_calibration && drive_state == drive_state_disabled){
+            drive_state = drive_state_anti_cogging_calibration;
+        }
+
+        // Disabled -> Idle
+        if(new_state == drive_state_idle && drive_state == drive_state_disabled){
+            // TODO: Check that encoder has been calibrated
+            drive_state = drive_state_idle;
+        }
+
+        // Idle -> Disabled
+        if(new_state == drive_state_disabled && drive_state == drive_state_idle){
+            // TODO: Check that encoder has been calibrated
+            drive_state = drive_state_disabled;
+        }
+
+        // Position -> idle
+        if(new_state == drive_state_position_control && drive_state == drive_state_idle){
+            position_setpoint = enc_angle_int;
+            drive_state = drive_state_position_control;
+        }
+
+        // Position -> disabled
+        if(new_state == drive_state_disabled && drive_state == drive_state_position_control){
+            drive_state = drive_state_disabled;
+        }
+        
     }
 }
 
@@ -362,15 +467,30 @@ void handle_telemetry_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
         CAN_Transmit_Array(array, 4);
     }
 
-    if(msg_type == TELEM_MOTOR_CURRENTS){
-        uint8_t array[] = {TELEM_MOTOR_CURRENTS, 
-                            (current_A_mA_filtered) & 0xFF, 
-                            (current_A_mA_filtered >> 8) & 0xFF,
-                            (current_B_mA_filtered) & 0xFF, 
-                            (current_B_mA_filtered >> 8) & 0xFF,
-                            (current_C_mA_filtered) & 0xFF, 
-                            (current_C_mA_filtered >> 8) & 0xFF};
-        CAN_Transmit_Array(array, 7);
+    // if(msg_type == TELEM_MOTOR_CURRENTS){
+    //     uint8_t array[] = {TELEM_MOTOR_CURRENTS, 
+    //                         (current_A_mA_filtered) & 0xFF, 
+    //                         (current_A_mA_filtered >> 8) & 0xFF,
+    //                         (current_B_mA_filtered) & 0xFF, 
+    //                         (current_B_mA_filtered >> 8) & 0xFF,
+    //                         (current_C_mA_filtered) & 0xFF, 
+    //                         (current_C_mA_filtered >> 8) & 0xFF};
+    //     CAN_Transmit_Array(array, 7);
+    // }
+
+    if(msg_type == TELEM_MOTOR_TORQUE){
+        uint8_t array[] = {TELEM_MOTOR_TORQUE, 
+                            (current_Q_setpoint_mA) & 0xFF, 
+                            (current_Q_setpoint_mA >> 8) & 0xFF};
+        CAN_Transmit_Array(array, 3);
+    }
+
+
+    if(msg_type == TELEM_DRIVE_STATE){
+        uint8_t array[] = {TELEM_DRIVE_STATE,
+            drive_state,
+            drive_error};
+        CAN_Transmit_Array(array, 3);
     }
 }
 
@@ -395,6 +515,19 @@ void handle_parameter_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
                 run_LED_colors[1],
                 run_LED_colors[2]};
             CAN_Transmit_Array(send_array, 4);
+        } else {
+            CAN_Transmit_Value_Bool(PARAM_LED_COLOR, false);
+        }
+    }
+
+    if(msg_type == PARAM_PHASE_RESISTANCE){
+        if(dlc == 1){
+            uint8_t send_array[] = {
+                PARAM_PHASE_RESISTANCE,
+                (estimated_resistance_mOhms >> 0) & 0xFF,
+                (estimated_resistance_mOhms >> 8) & 0xFF
+            };
+            CAN_Transmit_Array(send_array, 3);
         } else {
             CAN_Transmit_Value_Bool(PARAM_LED_COLOR, false);
         }

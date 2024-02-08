@@ -5,6 +5,7 @@
 #include "app.h"
 #include "stdbool.h"
 #include "comms_msgs.h"
+#include "stm32_uidhash.h"
 #include "foc.h"
 
 // extern enum appState;
@@ -14,6 +15,7 @@ extern uint16_t voltage_supply_mV;
 extern int16_t current_A_mA_filtered;
 extern int16_t current_B_mA_filtered;
 extern int16_t current_C_mA_filtered;
+extern int current_Q_setpoint_mA;
 
 extern position_control_enabled;
 

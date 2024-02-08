@@ -5,6 +5,8 @@
 #include "sensors.h"
 #include "math.h"
 
+#include "trig_luts.h"
+
 #include "stdbool.h"
 
 #include "cmsis_os.h"
@@ -20,7 +22,7 @@ enum DriveError {
     drive_error_none,
     drive_error_high_resistance,
     drive_error_low_resistance,
-    drive_error_no_supply
+    drive_error_low_voltage
 };
 
 extern enum DriveError drive_error;
@@ -30,6 +32,7 @@ enum DriveState {
     drive_state_disabled, // All phases disabled
     drive_state_resistance_estimation,
     drive_state_encoder_calibration,
+    drive_state_anti_cogging_calibration,
     drive_state_idle,     // Phases active but no control running
     drive_state_position_control
 };
@@ -38,11 +41,18 @@ extern enum DriveState drive_state;
 
 // If true, FOC is allowed to control motor phases
 extern bool foc_active;
+extern bool anti_cogging_enabled;
 
 //////////// VARIABLES
 extern int max_motor_current_mAmps;
 
 extern int estimated_resistance_mOhms;
+
+extern uint8_t electrical_angle_offset;
+
+extern int current_Q_setpoint_mA;
+
+extern int position_setpoint;
 
 //////////// EXTERNS
 extern TIM_HandleTypeDef htim1;
@@ -57,6 +67,10 @@ void start_drive_timers();
 void enable_DRV();
 // Disable DRV chip by setting ENABLE pin
 void disable_DRV();
+
+
+// Main drive state machine
+void drive_state_machine();
 
 /**
  * @brief Enable FOC loop, allowing it to apply phase voltages
@@ -85,8 +99,11 @@ void disable_foc_loop();
  * direct access to phases voltages.
  */
 void estimate_phase_resistance(float voltage);
+void calibrate_encoder(float voltage);
 
 enum DriveError check_supply_voltage();
+
+void apply_duty_at_electrical_angle_int(uint8_t angle, uint8_t magnitude);
 
 void set_duty_phase_A(uint8_t value);
 void set_duty_phase_B(uint8_t value);

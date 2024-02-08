@@ -45,6 +45,7 @@ Core/Src/foc.c \
 Core/Src/led.c \
 Core/Src/main.c \
 Core/Src/sensors.c \
+Core/Src/stm32_uidhash.c \
 Core/Src/stm32g4xx_hal_msp.c \
 Core/Src/stm32g4xx_hal_timebase_tim.c \
 Core/Src/stm32g4xx_it.c \

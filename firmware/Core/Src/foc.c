@@ -8,6 +8,7 @@ uint16_t voltage_supply_mV;
 
 
 bool position_control_enabled = false;
+bool anti_cogging_enabled = false;
 
 // Current Variables
 int position_setpoint_filtered = 0;
@@ -48,11 +49,11 @@ int16_t voltage_c_mV = 0;
 
 // Gains
 // TODO: Choose this based on motor resistance and inductance
-float current_P_gain = 0.02f;
+float current_P_gain = 0.04f;
 
 // Angle
 uint8_t electrical_angle = 0;
-uint8_t electrical_angle_offset = -39;
+uint8_t electrical_angle_offset = 48;
 
 int position_setpoint = 0;
 
@@ -65,7 +66,7 @@ void foc_interrupt(){
     // Calculate electrical angle as a uint8
     // 0 is aligned with phase A
     // 255 is just before wraparound
-    electrical_angle = enc_angle_int % (4096 / 8) / 2 - electrical_angle_offset;
+    electrical_angle = enc_angle_int % (4096 / 8) / 2 + electrical_angle_offset;
 
     // Calculate motor voltage
     voltage_supply_mV = adc1_dma[0] * 13;
@@ -73,8 +74,8 @@ void foc_interrupt(){
     // Calculate motor currents and transform them
     // 9 is a magic number
     // TODO: Document 9
-    current_A_mA =  (adc2_dma[0] - 2048 + current_A_offset_mA) * 9;
-    current_C_mA =  (adc2_dma[1] - 2048 - current_C_offset_mA) * 9;
+    current_A_mA =  (adc2_dma[0] - adc2_calib_offset[0]) * 9;
+    current_C_mA =  (adc2_dma[1] - adc2_calib_offset[1]) * 9;
     current_B_mA =  - (current_A_mA + current_C_mA);
 
     // Perform an IIR filter on current to cut down on noise and injected vibrations
@@ -89,29 +90,35 @@ void foc_interrupt(){
     // Generate current setpoint 
     // TODO: Split this out into another timer interrupt
 
-    if(position_control_enabled){
-        position_setpoint_filtered = 0.99f * position_setpoint_filtered + position_setpoint * 0.01f;
-        current_Q_setpoint_mA = 0.0f * current_Q_setpoint_mA + ((position_setpoint_filtered - enc_angle_int) * 20.0f) * 1.0f;
+    if(drive_state == drive_state_position_control || drive_state == drive_state_anti_cogging_calibration){
+        // position_setpoint_filtered = 0.99f * position_setpoint_filtered + position_setpoint * 0.01f;
+        position_setpoint_filtered = position_setpoint;
+        current_Q_setpoint_mA = 0.0f * current_Q_setpoint_mA + ((enc_angle_int - position_setpoint_filtered) * 60.0f) * 1.0f;
     } else {
         current_Q_setpoint_mA = 0;
     }
 
-    current_setpoint_limit_mA = 10000; // 1A current setpoint for testing
+    current_setpoint_limit_mA = 3000; // 1A current setpoint for testing
 
-    // torque_setpoint = (position_setpoint - enc_angle_int) * 1.0f
-    // position_setpoint = bound( (int16_t) (position_setpoint - enc_angle_int) * 1.0f, -current_setpoint_limit_mA, current_setpoint_limit_mA);
+    // torque_setpoint = (position_setpoint - enc_angle_int) * 1.0f;
+    // current_Q_setpoint_mA = bound( (int16_t) (position_setpoint - enc_angle_int) * 1.0f, -current_setpoint_limit_mA, current_setpoint_limit_mA);
     // current_Q_setpoint_mA = -1000;
     // Enforce limits on current
     current_Q_setpoint_mA = bound(current_Q_setpoint_mA, -current_setpoint_limit_mA, current_setpoint_limit_mA);
 
+    // Feedforward for anti-cogging
+    if(anti_cogging_enabled){
+        current_Q_setpoint_mA += current_offsets[electrical_angle];
+    }
+
     // Q current P loop
     // TODO: Add an integral term?
-    voltage_Q_mV = (current_Q_mA - current_Q_setpoint_mA) * current_P_gain;
+    voltage_Q_mV = (current_Q_mA - current_Q_setpoint_mA) * 0.03f;
     // voltage_Q_mV = -current_Q_setpoint_mA * 0.01f;
-    // voltage_Q_mV = 20;
+    // voltage_Q_mV = 0;
     voltage_Q_mV = (int16_t) bound(voltage_Q_mV, -200, 200);
     // D current P loop
-    voltage_D_mV = -(current_D_mA - current_D_setpoint_mA)  * current_P_gain;
+    voltage_D_mV = -(current_D_mA - current_D_setpoint_mA)  * 0.03f;
     // voltage_D_mV = 0;
     voltage_D_mV = (int16_t) bound(voltage_D_mV, -200, 200);
 
@@ -157,39 +164,39 @@ void inverse_park_transform(int16_t d, int16_t q, uint8_t angle, int16_t *alpha,
 
 
 /////////// LEGACY ///////////
-void apply_duty_at_electrical_angle_int(uint8_t angle, uint8_t magnitude){
-    angle = (angle + (1.0 / 4.0) * 256);
+// void apply_duty_at_electrical_angle_int(uint8_t angle, uint8_t magnitude){
+//     angle = (angle + (1.0 / 4.0) * 256);
 
-    uint8_t A_value = mult_sin_lut_uint8((uint8_t) (angle + (0.0 / 3.0) * 256), magnitude);
-    uint8_t B_value = mult_sin_lut_uint8((uint8_t) (angle + (1.0 / 3.0) * 256), magnitude);
-    uint8_t C_value = mult_sin_lut_uint8((uint8_t) (angle + (2.0 / 3.0) * 256), magnitude);
+//     uint8_t A_value = mult_sin_lut_uint8((uint8_t) (angle + (0.0 / 3.0) * 256), magnitude);
+//     uint8_t B_value = mult_sin_lut_uint8((uint8_t) (angle + (1.0 / 3.0) * 256), magnitude);
+//     uint8_t C_value = mult_sin_lut_uint8((uint8_t) (angle + (2.0 / 3.0) * 256), magnitude);
 
-    set_duty_phase_A(A_value);
-    set_duty_phase_B(B_value);
-    set_duty_phase_C(C_value);
-}
+//     set_duty_phase_A(A_value);
+//     set_duty_phase_B(B_value);
+//     set_duty_phase_C(C_value);
+// }
 
-void spin_electrical_rads_sin(float revs, int calibration_voltage){
-    for(int i = 0; i<=255; i++){
-        // apply_voltage_at_electrical_angle((i / 100.0f) * rads, calibration_voltage);
-        apply_voltage_at_electrical_angle_int((uint8_t) (int) (i * revs) % 254, calibration_voltage);
-        osDelay(5);
-    }
-}
+// void spin_electrical_rads_sin(float revs, int calibration_voltage){
+//     for(int i = 0; i<=255; i++){
+//         // apply_voltage_at_electrical_angle((i / 100.0f) * rads, calibration_voltage);
+//         apply_voltage_at_electrical_angle_int((uint8_t) (int) (i * revs) % 254, calibration_voltage);
+//         osDelay(5);
+//     }
+// }
 
-void spin_electrical_rev_forward(int calibration_voltage){
-    for(int i = 0; i<=255; i++){
-        // apply_voltage_at_electrical_angle((i / 100.0f) * rads, calibration_voltage);
-        apply_voltage_at_electrical_angle_int(i, calibration_voltage);
-        osDelay(5);
-    }
-}
+// void spin_electrical_rev_forward(int calibration_voltage){
+//     for(int i = 0; i<=255; i++){
+//         // apply_voltage_at_electrical_angle((i / 100.0f) * rads, calibration_voltage);
+//         apply_voltage_at_electrical_angle_int(i, calibration_voltage);
+//         osDelay(5);
+//     }
+// }
 
 
-void spin_electrical_rev_backward(int calibration_voltage){
-    for(int i = 0; i<=255; i++){
-        // apply_voltage_at_electrical_angle((i / 100.0f) * rads, calibration_voltage);
-        apply_voltage_at_electrical_angle_int(255 - i, calibration_voltage);
-        osDelay(5);
-    }
-}
+// void spin_electrical_rev_backward(int calibration_voltage){
+//     for(int i = 0; i<=255; i++){
+//         // apply_voltage_at_electrical_angle((i / 100.0f) * rads, calibration_voltage);
+//         apply_voltage_at_electrical_angle_int(255 - i, calibration_voltage);
+//         osDelay(5);
+//     }
+// }

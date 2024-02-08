@@ -9,15 +9,15 @@ void app_setup(){
     // (at beginning since calibration works best with )
     start_ADC();
 
-    // Enable DRV
-    enable_DRV();
-    calibrate_DRV_amps();
-
     // Start timers
     // TODO: Does this make sense
     start_led_timers();
     start_drive_timers();
     start_app_timers();
+
+    // Enable DRV
+    enable_DRV();
+    calibrate_DRV_amps();
 
     // Start comms
     init_and_start_can();
@@ -34,6 +34,7 @@ void app_setup(){
     // 10kHz motor commutation interrupt
     // TODO: Add this back into drive timers?
     // Can't quite remember why it's here
+    disable_foc_loop();
     HAL_TIM_Base_Start_IT(&htim6);
 
 
@@ -50,7 +51,19 @@ void app_status_led_task(){
 
     led_clock += 1;
 
-    led_rgb_int(run_LED_colors[0], run_LED_colors[1], run_LED_colors[2]);
+    // led_rgb_int(run_LED_colors[0], run_LED_colors[1], run_LED_colors[2]);
+
+    switch(drive_state){
+        case drive_state_error:
+            led_rgb(1.0, 0, 0);
+            osDelay(50);
+            led_rgb(0, 0, 0);
+            osDelay(150);
+            break;
+        case drive_state_disabled:
+            led_hsv(182.0f, 1.0f, sin(led_clock/50.0f) * 0.2f + 0.4f);
+            break;
+    }
     
     // switch (app_state){
     //     case app_state_idle:
@@ -70,7 +83,8 @@ void app_status_led_task(){
     //         break;
     // }
     
-    enable_foc_loop();
+    // enable_foc_loop();
+    // disable_foc_loop();
 
-    osDelay(5);
+    osDelay(10);
 }

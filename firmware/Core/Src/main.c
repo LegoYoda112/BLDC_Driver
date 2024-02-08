@@ -887,7 +887,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : DIP_1_Pin DIP_2_Pin DIP_3_Pin */
   GPIO_InitStruct.Pin = DIP_1_Pin|DIP_2_Pin|DIP_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : ENC_EN_Pin DRV_EN_Pin DRV_CAL_Pin */
@@ -988,7 +988,7 @@ void StartMainStateLoop(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    drive_state_machine();
   }
   /* USER CODE END StartMainStateLoop */
 }

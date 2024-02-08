@@ -71,4 +71,6 @@ void update_current_sense();
 
 float get_vmotor();
 
+bool get_dip(int dip_num);
+
 #endif

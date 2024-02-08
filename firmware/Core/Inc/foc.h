@@ -22,6 +22,8 @@ extern int16_t angle;
 
 extern uint8_t electrical_angle_offset;
 
+extern int16_t current_offsets[256];
+
 /**
  * @brief Set target current setpoints in rotor space
  * 

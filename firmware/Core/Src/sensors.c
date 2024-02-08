@@ -19,6 +19,17 @@ uint16_t enc_angle_uint12;
 bool start_up_pulses = false;
 uint16_t start_up_pulse_count = 0;
 
+bool get_dip(int dip_num){
+  if(dip_num == 1){
+    return !HAL_GPIO_ReadPin(DIP_1_GPIO_Port, DIP_1_Pin);
+  }else if(dip_num == 2){
+    return !HAL_GPIO_ReadPin(DIP_2_GPIO_Port, DIP_2_Pin);
+  }else if(dip_num == 3){
+    return !HAL_GPIO_ReadPin(DIP_3_GPIO_Port, DIP_3_Pin);
+  }
+  return false;
+}
+
 void encoder_ISR(){
   if(start_up_pulses || HAL_GPIO_ReadPin(IFB_GPIO_Port, IFB_Pin)){
     enc_angle_int ++;
@@ -111,16 +122,19 @@ void calibrate_DRV_amps(){
     // Disable calibration
     HAL_GPIO_WritePin(DRV_CAL_GPIO_Port, DRV_CAL_Pin, 0);
 
-    // int num_samples = 200;
-    // for(int i = 0; i < num_samples; i++){
-    //   adc2_calib_offset[0] += adc2_dma[0];
-    //   adc2_calib_offset[1] += adc2_dma[1];
-    //   adc2_calib_offset[2] += adc2_dma[0];
-    //   HAL_Delay(1);
-    // }
-    // adc2_calib_offset[0] /= num_samples;
-    // adc2_calib_offset[1] /= num_samples;
-    // adc2_calib_offset[2] /= num_samples;
+    int num_samples = 200;
+    for(int i = 0; i < num_samples; i++){
+      adc2_calib_offset[0] += adc2_dma[0];
+      adc2_calib_offset[1] += adc2_dma[1];
+      adc2_calib_offset[2] += adc2_dma[0];
+      HAL_Delay(1);
+    }
+
+    adc2_calib_offset[0] /= num_samples;
+    adc2_calib_offset[1] /= num_samples;
+    adc2_calib_offset[2] /= num_samples;
+
+    printf("lol");
 }
 
 void update_current_sense(){

@@ -99,40 +99,21 @@ void drive_state_machine(){
 
 
 void anti_cogging_calibration(float current){
+    // TODO allow current and P (I?) gains to be adjusted
+
+    // Enable FOC, disable anti-cogging, move the motor to 0 and wait for it to settle
     enable_foc_loop();
-
-
     anti_cogging_enabled = false;
-    position_setpoint = 0;
+    
+    position_setpoint = 0; // TODO: this is bad
     osDelay(1000);
 
-        // int setpoint_electrical_angle = position_setpoint % (4096 / 8) / 2 + electrical_angle_offset;
-
-        // current_offsets[setpoint_electrical_angle % 256] = current_Q_setpoint_mA;
-        // uint8_t applied_electrical_angle = (uint8_t) (int) (-i) % 256;
-        // apply_duty_at_electrical_angle_int(applied_electrical_angle, duty);
-
-        // uint8_t measured_electrical_angle = enc_angle_int % (4096 / 8) / 2;
-        
-        // int offset = applied_electrical_angle - measured_electrical_angle;
-                
-        // if(offset < 127){
-        //     offset += 255;
-        // }
-
-        // if(offset > 127){
-        //     offset -= 255;
-        // }
-
-        // offset_average += offset;
-
-
-    // Spin one electrical rev backward
-
+    // Zero out offset table
     for(int i = 0; i < 256; i++){
         current_offsets[i] = 0;
     }
 
+    // Move backward 4 electrical revs
     for(int i = 0; i<256 * 4; i++){
         position_setpoint = -i * 2;
         osDelay(10);
@@ -140,6 +121,7 @@ void anti_cogging_calibration(float current){
         current_offsets[setpoint_electrical_angle] += current_Q_setpoint_mA;
     }
 
+    // Move forward 4 electrical revs
     for(int i = 0; i<256 * 4; i++){
         position_setpoint = i * 2 - 255 * 4 * 2;
         osDelay(10);
@@ -147,13 +129,14 @@ void anti_cogging_calibration(float current){
         current_offsets[setpoint_electrical_angle] += current_Q_setpoint_mA;
     }
 
+    // Average samples
     for(int i = 0; i < 256; i++){
         current_offsets[i] = current_offsets[i] / 8;
     }
     
+    // Disable FOC loop and enable anti-cogging
     disable_foc_loop();
     anti_cogging_enabled = true;
-    printf("lol");
 }
 
 // Currently only checks phase A as that amp seems to be the most accurate

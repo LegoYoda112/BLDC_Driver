@@ -158,6 +158,12 @@ class GUI(object):
                 "Phase resistance", self.drive.parameters.phase_resistance, 0.1, 0.0, 0.0, "%.02f Ohms"
             )
 
+            changed, self.drive.parameters.anti_cogging = imgui.checkbox("Anti-Cogging", self.drive.parameters.anti_cogging)
+
+            if(changed):
+                # print(self.drive.parameters.anti_cogging)
+                self.drive.set_parameter(drive.parameters.PARAM_ANTI_COGGING, self.drive.parameters.anti_cogging)
+
 
 
             # if imgui.tree_node("Configuration"):

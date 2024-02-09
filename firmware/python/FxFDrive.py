@@ -7,9 +7,6 @@ from enum import Enum
 RECV_TIMEOUT = 3
 RETRY_TIMEOUT = 5
 
-PARAM_LED_COLOR = 150
-PARAM_PHASE_RESISTANCE = 160
-
 SYS_LIST_ALL_MSG_ID = 5
 
 
@@ -102,9 +99,14 @@ def list_available_drives(bus):
     return messages
 
 class Parameters:
+    PARAM_LED_COLOR = 150
+    PARAM_PHASE_RESISTANCE = 160
+    PARAM_ANTI_COGGING = 170
+
     def __init__(self):
         self.run_led_colors = [0, 255, 0]
         self.phase_resistance = 0 
+        self.anti_cogging = 0
         pass
 
     def __str__(self):
@@ -250,8 +252,9 @@ class FxFDrive:
     
     def read_parameters(self):
         """ Reads out all parameters and updates values """
-        self.parameters.run_led_colors = self.get_parameter(PARAM_LED_COLOR)
-        self.parameters.phase_resistance = bytes_to_int(self.get_parameter(PARAM_PHASE_RESISTANCE)) / 1000.0
+        self.parameters.run_led_colors = self.get_parameter(self.parameters.PARAM_LED_COLOR)
+        self.parameters.phase_resistance = bytes_to_int(self.get_parameter(self.parameters.PARAM_PHASE_RESISTANCE)) / 1000.0
+        self.parameters.anti_cogging = bytes_to_int(self.get_parameter(self.parameters.PARAM_ANTI_COGGING))
         return self.parameters
 
     def write_parameters(self, parameters = None):
@@ -259,7 +262,7 @@ class FxFDrive:
         if(parameters == None):
             parameters = self.parameters
         
-        self.set_parameter(PARAM_LED_COLOR, parameters.run_led_colors)
+        self.set_parameter(self.parameters.PARAM_LED_COLOR, parameters.run_led_colors)
 
     def save_parameters(self):
         """ Updates parameters in device EEPROM """

@@ -532,6 +532,21 @@ void handle_parameter_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
             CAN_Transmit_Value_Bool(PARAM_LED_COLOR, false);
         }
     }
+
+    if(msg_type == PARAM_ANTI_COGGING){
+        if(dlc == 1){
+            uint8_t send_array[] = {
+                PARAM_ANTI_COGGING,
+                anti_cogging_enabled
+            };
+            CAN_Transmit_Array(send_array, 3);
+        } else if(dlc == 2){
+            anti_cogging_enabled = RxData[1];
+            CAN_Transmit_Value_Bool(PARAM_ANTI_COGGING, true);
+        } else {
+            CAN_Transmit_Value_Bool(PARAM_ANTI_COGGING, false);
+        }
+    }
 }
 
 

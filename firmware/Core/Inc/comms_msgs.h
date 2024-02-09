@@ -53,6 +53,8 @@
 // DEF [resistance, resistance]
 // UNIT mOhms
 
+#define PARAM_ANTI_COGGING 170
+
 
 
 ////////////////////////////////// SYSTEM (msgs sent on ID 0)

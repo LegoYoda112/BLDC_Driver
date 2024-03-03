@@ -381,11 +381,6 @@ void handle_diagnostic_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
 void handle_action_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
     int msg_type = RxData[0];
 
-
-    if(msg_type == ACTION_MOTOR_ENABLE_POSITION_CONTROL){
-        position_control_enabled = RxData[1];
-    }
-
     if(msg_type == ACTION_MOTOR_POSITION_SETPOINT){
         int setpoint = RxData[1] | RxData[2] << 8 | RxData[3] << 16;
         if(setpoint > 16777216/2){
@@ -442,6 +437,11 @@ void handle_action_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
         // Position -> disabled
         if(new_state == drive_state_disabled && drive_state == drive_state_position_control){
             drive_state = drive_state_disabled;
+        }
+
+        // Position -> idle
+        if(new_state == drive_state_idle && drive_state == drive_state_position_control){
+            drive_state = drive_state_idle;
         }
         
     }
@@ -529,7 +529,58 @@ void handle_parameter_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
             };
             CAN_Transmit_Array(send_array, 3);
         } else {
-            CAN_Transmit_Value_Bool(PARAM_LED_COLOR, false);
+            CAN_Transmit_Value_Bool(PARAM_PHASE_RESISTANCE, false);
+        }
+    }
+
+    if(msg_type == PARAM_CURRENT_LIMIT){
+        if(dlc == 1){
+            uint8_t send_array[] = {
+                PARAM_CURRENT_LIMIT,
+                (current_setpoint_limit_mA >> 0) & 0xFF,
+                (current_setpoint_limit_mA >> 8) & 0xFF
+            };
+            CAN_Transmit_Array(send_array, 3);
+        } else if(dlc == 3) {
+            int new_current_setpoint_limit_mA = (uint16_t) RxData[1] << 0 | 
+                                     RxData[2] << 8;
+            // Safety limit of 10A
+            if(new_current_setpoint_limit_mA < 15000){
+                current_setpoint_limit_mA = new_current_setpoint_limit_mA;
+                CAN_Transmit_Value_Bool(PARAM_CURRENT_LIMIT, true);
+            }else{
+                CAN_Transmit_Value_Bool(PARAM_CURRENT_LIMIT, false);
+            }
+        }
+    }
+
+    if(msg_type == PARAM_ENCODER_OFFSET){
+        if(dlc == 1){
+            uint8_t send_array[] = {
+                PARAM_ENCODER_OFFSET,
+                (electrical_angle_offset >> 0) & 0xFF
+            };
+            CAN_Transmit_Array(send_array, 2);
+        } else if(dlc == 2) {
+            electrical_angle_offset = RxData[1];
+            CAN_Transmit_Value_Bool(PARAM_ENCODER_OFFSET, true);
+        }
+    }
+
+    if(msg_type == PARAM_ANTI_COGGING_TABLE){
+        if(dlc == 2){
+            uint8_t index = RxData[1];
+            uint8_t send_array[] = {
+                PARAM_ANTI_COGGING_TABLE,
+                (current_offsets[index] >> 0) & 0xFF,
+                (current_offsets[index] >> 8) & 0xFF
+            };
+            CAN_Transmit_Array(send_array, 3);
+        } else if(dlc == 4){
+            uint8_t index = RxData[1];
+            current_offsets[index] = (uint16_t) RxData[2] << 0 | 
+                                     RxData[3] << 8;
+            CAN_Transmit_Value_Bool(PARAM_ANTI_COGGING_TABLE, true);
         }
     }
 

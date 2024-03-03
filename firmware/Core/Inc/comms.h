@@ -16,6 +16,7 @@ extern int16_t current_A_mA_filtered;
 extern int16_t current_B_mA_filtered;
 extern int16_t current_C_mA_filtered;
 extern int current_Q_setpoint_mA;
+extern int current_setpoint_limit_mA;
 
 extern position_control_enabled;
 

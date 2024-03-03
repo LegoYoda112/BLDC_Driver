@@ -35,7 +35,8 @@ def int_to_bytes(num_bytes, value, reversed = False):
         byte = (value >> i * 8) & 0xFF
         byte_array.append(byte)
 
-    byte_array.reverse()
+    if(reversed):
+        byte_array.reverse()
     return byte_array
 
 def bytes_to_int(byte_array, reversed = False):
@@ -101,18 +102,35 @@ def list_available_drives(bus):
 class Parameters:
     PARAM_LED_COLOR = 150
     PARAM_PHASE_RESISTANCE = 160
+    PARAM_ENCODER_OFFSET = 161
+    PARAM_ANTI_COGGING_TABLE = 162
     PARAM_ANTI_COGGING = 170
 
-    def __init__(self):
+    PARAM_CURRENT_GAIN = 180
+    PARAM_CURRENT_LIMIT = 181
+    PARAM_POSITION_GAIN = 185
+
+
+
+    def __init__(self, motor):
         self.run_led_colors = [0, 255, 0]
-        self.phase_resistance = 0 
+        self.phase_resistance = 0
+        self.encoder_offset = 0
         self.anti_cogging = 0
+
+        self.current_gain = 0
+        self.current_limit = 0
+        self.position_gain = 0
         pass
 
     def __str__(self):
         output_string = "Motor parameters: \n"
         output_string += f"Run led colors - {self.run_led_colors}"
         return output_string
+    
+
+    # def set_anti_cogging_table_entry(self, index, value):
+    #     self.motor.set_parameter()
 
 class Telemetry:
     TELEM_DRIVE_STATE = 100
@@ -150,12 +168,16 @@ class Telemetry:
 
 class Action:
     ACTION_REQUEST_STATE_CHANGE = 20
+    ACTION_MOTOR_POSITION_SETPOINT = 51
 
     def __init__(self, motor):
         self.motor = motor
 
     def request_state_change(self, new_state):
         self.motor.send_array([self.ACTION_REQUEST_STATE_CHANGE, new_state])
+    
+    def send_position_target(self, target):
+        self.motor.send_array([self.ACTION_MOTOR_POSITION_SETPOINT] + int_to_bytes(3, target))
 
 class FxFDrive:
     def __init__(self, can_bus, can_id, uid = None, name = "50x50Drive"):
@@ -164,7 +186,7 @@ class FxFDrive:
         self.uid = uid
         self.name = name
 
-        self.parameters = Parameters()
+        self.parameters = Parameters(self)
         self.telemetry = Telemetry(self)
         self.action = Action(self)
 
@@ -194,6 +216,32 @@ class FxFDrive:
                     break
                 elif(ret.arbitration_id == self.can_id and
                 ret.data[0] == value_id and 
+                ret.dlc > 1):
+                    done = True
+                    break
+
+            if(done == True):
+                break
+        
+        if(ret == None):
+            return None
+        return [int(v) for v in ret.data][1:]
+    
+    def read_data_two(self, value_a, value_b):
+        """ Gets value based on two provided keys """
+
+        ret = None
+        for x in range(RETRY_TIMEOUT):
+            self.send_array([value_a, value_b])
+            done = False
+
+            for i in range(RECV_TIMEOUT):
+                ret = self.can_bus.recv(0.1)
+                if(ret == None):
+                    print("Retrying read")
+                    break
+                elif(ret.arbitration_id == self.can_id and
+                ret.data[0] == value_a and 
                 ret.dlc > 1):
                     done = True
                     break
@@ -250,11 +298,20 @@ class FxFDrive:
 
         return bool(ret.data[0])
     
+    def set_parameter_int(self, parameter_id, parameter_value, num_bytes):
+        self.set_parameter(parameter_id, int_to_bytes(num_bytes, parameter_value))
+
+
+
     def read_parameters(self):
         """ Reads out all parameters and updates values """
         self.parameters.run_led_colors = self.get_parameter(self.parameters.PARAM_LED_COLOR)
         self.parameters.phase_resistance = bytes_to_int(self.get_parameter(self.parameters.PARAM_PHASE_RESISTANCE)) / 1000.0
         self.parameters.anti_cogging = bytes_to_int(self.get_parameter(self.parameters.PARAM_ANTI_COGGING))
+        self.parameters.encoder_offset = bytes_to_int(self.get_parameter(self.parameters.PARAM_ENCODER_OFFSET))
+        # self.parameters.current_gain = bytes_to_int(self.get_parameter(self.parameters.PARAM_CURRENT_GAIN))
+        self.parameters.current_limit = bytes_to_int(self.get_parameter(self.parameters.PARAM_CURRENT_LIMIT))
+        # self.parameters.position_gain = bytes_to_int(self.get_parameter(self.parameters.PARAM_POSITION_GAIN))
         return self.parameters
 
     def write_parameters(self, parameters = None):

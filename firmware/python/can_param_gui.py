@@ -6,7 +6,7 @@ from imgui.integrations.glfw import GlfwRenderer
 
 import numpy as np
 import time
-from FxFDrive import FxFDrive, make_can_bus, list_available_drives, bytes_to_int
+from FxFDrive import FxFDrive, make_can_bus, list_available_drives, bytes_to_int, int_to_bytes
 from FxFDrive import DriveError, DriveState
 
 bus = make_can_bus()
@@ -18,7 +18,6 @@ available_drives = list_available_drives(bus)
 drives = []
 
 for drive in available_drives:
-
 
     uid = ''.join(format(x, '02x') for x in drive.data[2:])
 
@@ -94,6 +93,11 @@ class GUI(object):
                             self.drive = drive
                             self.drive.read_parameters()
 
+                            if(self.drive.can_id == 10):
+                                self.drive.set_parameter_int(self.drive.parameters.PARAM_ENCODER_OFFSET, -98, 1)
+                            if(self.drive.can_id == 11):
+                                self.drive.set_parameter_int(self.drive.parameters.PARAM_ENCODER_OFFSET, 49, 1)
+
                             self.color = [self.drive.parameters.run_led_colors[0] / 255.0,
                                 self.drive.parameters.run_led_colors[1] / 255.0,
                                 self.drive.parameters.run_led_colors[2] / 255.0]
@@ -158,6 +162,18 @@ class GUI(object):
                 "Phase resistance", self.drive.parameters.phase_resistance, 0.1, 0.0, 0.0, "%.02f Ohms"
             )
 
+            imgui.drag_int(
+                "Encoder offset", self.drive.parameters.encoder_offset,  0.1, 0.0, 0.0, "%f"
+            )
+
+            changed, self.drive.parameters.current_limit = imgui.drag_int(
+                "Current Limit", self.drive.parameters.current_limit,  0.1, 0.0, 0.0, "%f mA"
+            )
+
+            if(changed):
+                print(int_to_bytes(2, self.drive.parameters.current_limit, False))
+                self.drive.set_parameter(drive.parameters.PARAM_CURRENT_LIMIT, int_to_bytes(2, self.drive.parameters.current_limit, False))
+                
             changed, self.drive.parameters.anti_cogging = imgui.checkbox("Anti-Cogging", self.drive.parameters.anti_cogging)
 
             if(changed):

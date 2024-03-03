@@ -12,7 +12,7 @@ bool anti_cogging_enabled = false;
 
 // Current Variables
 int position_setpoint_filtered = 0;
-int current_setpoint_limit_mA = 1000;
+int current_setpoint_limit_mA = 3000;
 int current_Q_setpoint_mA = 0;
 int current_D_setpoint_mA = 0;
 
@@ -79,9 +79,9 @@ void foc_interrupt(){
     current_B_mA =  - (current_A_mA + current_C_mA);
 
     // Perform an IIR filter on current to cut down on noise and injected vibrations
-    current_A_mA_filtered = current_A_mA_filtered * 0.9f + current_A_mA * 0.1f;
-    current_B_mA_filtered = current_B_mA_filtered * 0.9f + current_B_mA * 0.1f;
-    current_C_mA_filtered = current_C_mA_filtered * 0.9f + current_C_mA * 0.1f;
+    current_A_mA_filtered = current_A_mA_filtered * 0.05f + current_A_mA * 0.95f;
+    current_B_mA_filtered = current_B_mA_filtered * 0.05f + current_B_mA * 0.95f;
+    current_C_mA_filtered = current_C_mA_filtered * 0.05f + current_C_mA * 0.95f;
 
     // Perform clarke and park transform to get motor current in orthogonal rotor-centric coordinates
     clarke_transform(current_A_mA_filtered, current_B_mA_filtered, current_C_mA_filtered, &current_Alpha_mA, &current_Beta_mA);
@@ -93,12 +93,12 @@ void foc_interrupt(){
     if(drive_state == drive_state_position_control || drive_state == drive_state_anti_cogging_calibration){
         // position_setpoint_filtered = 0.99f * position_setpoint_filtered + position_setpoint * 0.01f;
         position_setpoint_filtered = position_setpoint;
-        current_Q_setpoint_mA = 0.0f * current_Q_setpoint_mA + ((enc_angle_int - position_setpoint_filtered) * 60.0f) * 1.0f;
+        current_Q_setpoint_mA = 0.0f * current_Q_setpoint_mA + ((enc_angle_int - position_setpoint_filtered) * 100.0f) * 1.0f;
     } else {
         current_Q_setpoint_mA = 0;
     }
 
-    current_setpoint_limit_mA = 3000; // 1A current setpoint for testing
+    // current_setpoint_limit_mA = 3000; // 1A current setpoint for testing
 
     // torque_setpoint = (position_setpoint - enc_angle_int) * 1.0f;
     // current_Q_setpoint_mA = bound( (int16_t) (position_setpoint - enc_angle_int) * 1.0f, -current_setpoint_limit_mA, current_setpoint_limit_mA);
@@ -108,17 +108,17 @@ void foc_interrupt(){
 
     // Feedforward for anti-cogging
     if(anti_cogging_enabled){
-        current_Q_setpoint_mA += current_offsets[electrical_angle];
+        current_Q_setpoint_mA += current_offsets[electrical_angle] * 1.0f;
     }
 
     // Q current P loop
     // TODO: Add an integral term?
-    voltage_Q_mV = (current_Q_mA - current_Q_setpoint_mA) * 0.03f;
+    voltage_Q_mV = (current_Q_mA - current_Q_setpoint_mA) * 0.04f;
     // voltage_Q_mV = -current_Q_setpoint_mA * 0.01f;
     // voltage_Q_mV = 0;
     voltage_Q_mV = (int16_t) bound(voltage_Q_mV, -200, 200);
     // D current P loop
-    voltage_D_mV = -(current_D_mA - current_D_setpoint_mA)  * 0.03f;
+    voltage_D_mV = -(current_D_mA - current_D_setpoint_mA)  * 0.04f;
     // voltage_D_mV = 0;
     voltage_D_mV = (int16_t) bound(voltage_D_mV, -200, 200);
 

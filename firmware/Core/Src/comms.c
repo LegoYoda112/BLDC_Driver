@@ -467,6 +467,15 @@ void handle_telemetry_RX(FDCAN_RxHeaderTypeDef RxHeader, uint8_t RxData[]){
         CAN_Transmit_Array(array, 4);
     }
 
+    if(msg_type == TELEM_MOTOR_VELOCITY){
+        uint8_t array[] = {TELEM_MOTOR_VELOCITY, 
+                            (encoder_velocity) & 0xFF, 
+                            (encoder_velocity >> 8) & 0xFF,
+                            (encoder_velocity >> 16) & 0xFF};
+        CAN_Transmit_Array(array, 4);
+    }
+
+
     // if(msg_type == TELEM_MOTOR_CURRENTS){
     //     uint8_t array[] = {TELEM_MOTOR_CURRENTS, 
     //                         (current_A_mA_filtered) & 0xFF, 

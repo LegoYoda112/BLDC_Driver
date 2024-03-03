@@ -104,6 +104,7 @@ class GUI(object):
 
             drive_voltage = self.drive.telemetry.get_motor_voltage_V()
             motor_position = self.drive.telemetry.get_motor_position_revs()
+            motor_velocity = self.drive.telemetry.get_motor_velocity_encoder_raw()
             drive_state, drive_error = self.drive.telemetry.get_drive_state()
             motor_torque = self.drive.telemetry.get_motor_torque()
 
@@ -130,6 +131,10 @@ class GUI(object):
 
             imgui.drag_int(
                 "Rotor position", motor_position * 4096, 0.1, 0.0, 0.0, "%f ticks"
+            )
+
+            imgui.slider_int(
+                "Rotor velocity", motor_velocity, -100000, 100000, "%f ticks / s"
             )
 
             imgui.slider_float(

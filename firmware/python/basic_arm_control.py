@@ -34,8 +34,8 @@ if(startup_write):
 time.sleep(0.1)
 
 print("Setting parameters")
-shoulder.set_parameter_int(shoulder.parameters.PARAM_CURRENT_LIMIT, 9000, 2)
-elbow.set_parameter_int(elbow.parameters.PARAM_CURRENT_LIMIT, 9000, 2)
+shoulder.set_parameter_int(shoulder.parameters.PARAM_CURRENT_LIMIT, 10000, 2)
+elbow.set_parameter_int(elbow.parameters.PARAM_CURRENT_LIMIT, 10000, 2)
 
 shoulder.set_parameter_int(shoulder.parameters.PARAM_ANTI_COGGING, 1, 1)
 elbow.set_parameter_int(elbow.parameters.PARAM_ANTI_COGGING, 1, 1)
@@ -105,7 +105,7 @@ def trap_to_position(shoulder_target_position, elbow_target_position, samples):
 
     timestep = 0.001
     for t in range(samples):
-        factor = trapazoidal_target(0, 1, 4.0, 50.0, t * timestep)
+        factor = trapazoidal_target(0, 1, 8.0, 60.0, t * timestep)
         elbow_target = lerp(elbow_starting_position, elbow_target_position, factor)
         shoulder.action.send_position_target(lerp(shoulder_starting_position, shoulder_target_position, factor))
         elbow.action.send_position_target(elbow_target)
@@ -115,21 +115,22 @@ def trap_to_position(shoulder_target_position, elbow_target_position, samples):
     shoulder_starting_position = shoulder_target_position
     elbow_starting_position = elbow_target_position
 
-    plt.plot(elbow_position)
-    plt.show()
+    # plt.plot(elbow_position)
+    # plt.show()
 
 #     shoulder_target_position = -1770
 # elbow_target_position = 5000
 
 
-# input("Move")
+# time.sleep(5)
+input("Move")
+time.sleep(5)
 # trap_to_position(-9911, -11669, 800)
-input("Move")
-trap_to_position(-13500, 8000, 1000)
-input("Move")
-trap_to_position(-17500, -500, 1000)
-input("Move")
-trap_to_position(-13500, 8000, 1000)
+trap_to_position(-9800, 7800, 800)
+# input("Move")
+trap_to_position(-1600, -1500, 800)
+# input("Move")
+trap_to_position(-9800, 7800, 800)
 
 
 

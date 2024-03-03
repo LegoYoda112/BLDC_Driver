@@ -135,6 +135,7 @@ class Parameters:
 class Telemetry:
     TELEM_DRIVE_STATE = 100
     TELEM_MOTOR_POSITION = 101
+    TELEM_MOTOR_VELOCITY = 102
     TELEM_MOTOR_PHASE_RESISTANCE = 110
     TELM_MOTOR_TORQUE = 111
     TELEM_MOTOR_VOLTAGE = 112
@@ -151,6 +152,11 @@ class Telemetry:
     
     def get_motor_position_encoder_raw(self):
         data = self.motor.read_data(self.TELEM_MOTOR_POSITION)
+        position = bytes_to_int(data)
+        return position
+    
+    def get_motor_velocity_encoder_raw(self):
+        data = self.motor.read_data(self.TELEM_MOTOR_VELOCITY)
         position = bytes_to_int(data)
         return position
 

@@ -25,6 +25,7 @@
 // DEF [drive state, drive error]
 
 #define TELEM_MOTOR_POSITION 101
+#define TELEM_MOTOR_VELOCITY 102
 
 #define TELEM_MOTOR_PHASE_RESISTANCE 110
 // Motor parameters

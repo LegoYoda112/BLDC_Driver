@@ -52,6 +52,8 @@ int16_t voltage_c_mV = 0;
 float current_P_gain = 0.04f;
 
 // Angle
+int prev_encoder_position = 0;
+int encoder_velocity = 0;
 uint8_t electrical_angle = 0;
 uint8_t electrical_angle_offset = 48;
 
@@ -68,6 +70,12 @@ void foc_interrupt(){
     // 255 is just before wraparound
     electrical_angle = enc_angle_int % (4096 / 8) / 2 + electrical_angle_offset;
 
+
+    // Calculate velocity
+    // TODO: This is bad
+    encoder_velocity = encoder_velocity * 0.998 + ((enc_angle_int - prev_encoder_position) * 10000) * 0.002;
+    prev_encoder_position = enc_angle_int;
+
     // Calculate motor voltage
     voltage_supply_mV = adc1_dma[0] * 13;
 
@@ -79,9 +87,13 @@ void foc_interrupt(){
     current_B_mA =  - (current_A_mA + current_C_mA);
 
     // Perform an IIR filter on current to cut down on noise and injected vibrations
-    current_A_mA_filtered = current_A_mA_filtered * 0.05f + current_A_mA * 0.95f;
-    current_B_mA_filtered = current_B_mA_filtered * 0.05f + current_B_mA * 0.95f;
-    current_C_mA_filtered = current_C_mA_filtered * 0.05f + current_C_mA * 0.95f;
+    current_A_mA_filtered = current_A_mA;
+    current_B_mA_filtered = current_B_mA;
+    current_C_mA_filtered = current_C_mA;
+
+    // current_A_mA_filtered = current_A_mA_filtered * 0.05f + current_A_mA * 0.95f;
+    // current_B_mA_filtered = current_B_mA_filtered * 0.05f + current_B_mA * 0.95f;
+    // current_C_mA_filtered = current_C_mA_filtered * 0.05f + current_C_mA * 0.95f;
 
     // Perform clarke and park transform to get motor current in orthogonal rotor-centric coordinates
     clarke_transform(current_A_mA_filtered, current_B_mA_filtered, current_C_mA_filtered, &current_Alpha_mA, &current_Beta_mA);
@@ -92,8 +104,11 @@ void foc_interrupt(){
 
     if(drive_state == drive_state_position_control || drive_state == drive_state_anti_cogging_calibration){
         // position_setpoint_filtered = 0.99f * position_setpoint_filtered + position_setpoint * 0.01f;
-        position_setpoint_filtered = position_setpoint;
-        current_Q_setpoint_mA = 0.0f * current_Q_setpoint_mA + ((enc_angle_int - position_setpoint_filtered) * 100.0f) * 1.0f;
+        // position_setpoint_filtered = position_setpoint;
+        // current_Q_setpoint_mA = 0.0f * current_Q_setpoint_mA + ((enc_angle_int - position_setpoint_filtered) * 100.0f) * 1.0f;
+        // int vel_setpoint = 1000;
+        int vel_setpoint = 10.0f * (position_setpoint - enc_angle_int);
+        current_Q_setpoint_mA = 1.5f * (encoder_velocity-vel_setpoint) - 0.0f * vel_setpoint;
     } else {
         current_Q_setpoint_mA = 0;
     }

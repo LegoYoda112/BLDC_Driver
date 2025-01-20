@@ -63,7 +63,12 @@ int prev_encoder_position = 0;
 int encoder_velocity = 0;
 uint8_t electrical_angle = 0;
 uint8_t electrical_angle_offset = 0;
+<<<<<<< Updated upstream
 int8_t electrical_mechanical_ratio = 21;
+=======
+
+int position_setpoint = 0;
+>>>>>>> Stashed changes
 
 void set_current_setpoints(int D_setpoint_mA, int Q_setpoint_mA){
     current_Q_setpoint_mA = Q_setpoint_mA;

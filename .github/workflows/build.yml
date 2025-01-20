@@ -19,4 +19,4 @@ jobs:
       
     - name: Build bootloader 
       run: cd bootloader && make -j
-##run
+##runn

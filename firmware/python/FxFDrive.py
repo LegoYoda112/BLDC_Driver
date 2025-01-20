@@ -68,14 +68,16 @@ def make_can_bus():
     """ Finds attached 50x50-Drive and opens it as a SLCAN interface """
     COM_PORT = None
     for port in list_ports.comports():
-        if(port.description == "50x50-Drive"):
-            COM_PORT = port.device
+        COM_PORT = port.device
 
     if(COM_PORT == None):
         raise Exception("No interface found")
 
-    bus = can.Bus(interface="slcan", channel=COM_PORT, ttyBaudrate = 115200)
+    bus = can.Bus(interface="slcan", channel="COM4", ttyBaudrate = 115200)
     bus.set_bitrate(500_000)
+
+    print(bus)
+    print("bus") 
 
     return bus
 

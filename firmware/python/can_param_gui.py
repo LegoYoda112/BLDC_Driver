@@ -17,12 +17,16 @@ available_drives = list_available_drives(bus)
 
 drives = []
 
+print(available_drives) 
+
 for drive in available_drives:
 
     uid = ''.join(format(x, '02x') for x in drive.data[2:])
 
     print(drive.arbitration_id, uid)
     drives.append(FxFDrive(bus, drive.arbitration_id, uid))
+
+print(drives)    
 
 motor = drives[0]
 

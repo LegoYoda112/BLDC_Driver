@@ -19,7 +19,7 @@ float torque_max_Nm = 20.0f;
 float velocity_radsps = 0.0f;
 float kV = 0.0f;
 float velocity_target_radsps = 0.0f; 
-float velocity_max_radsps = 100.0f; // ~1000 rpm
+float velocity_max_radsps = 200.0f; // ~1000 rpm
 
 float kP = 0.5f; // for impedance control
 float kPV = 0.0f; // for cascaded position control
@@ -102,7 +102,7 @@ bool request_drive_state_change(enum DriveState new_state){
     if((new_state == drive_state_torque_control ||
         new_state == drive_state_velocity_control ||
         new_state == drive_state_position_control ||
-        new_state == drive_state_velocity_control)
+        new_state == drive_state_impedance_control)
        && drive_state == drive_state_idle){
         drive_state = new_state;
         return true;
@@ -161,8 +161,22 @@ void drive_init(){
     HAL_TIM_Base_Start_IT(&htim16);
 
 
-    // Read in memory values
-    electrical_angle_offset = mem_read_uint8(2, 0);
+
+    #ifdef HARDCODED_MOTOR_PARAMETERS
+        electrical_mechanical_ratio = HARDCODED_MOTOR_POLES;
+        electrical_angle_offset = HARDCODED_ELECTRICAL_ANGLE_OFFSET;
+    #endif
+
+    #ifdef MOTOR_REVERSED  
+        motor_reversed = true;
+    #endif
+
+    #ifdef USE_MEM
+        // Read in memory values
+        electrical_angle_offset = mem_read_uint8(2, 0);
+    #endif
+ 
+    printf("lol lmao");
 }
 
 
@@ -387,7 +401,11 @@ void calibrate_encoder(float voltage){
     // float ratio_estimate = (4096.0 / ((float)finishing_angle - (float)starting_angle) * electrical_turns);
     // electrical_mechanical_ratio = roundf(ratio_estimate);
 
-    electrical_mechanical_ratio = 21;
+    // if(USE_MEM){
+    //     // TODO: Calculate this based on motor movement
+    // } else {
+    //     electrical_mechanical_ratio = HARDCODED_ELECTRICAL_ANGLE_OFFSET;
+    // }
 
     // Spin forward
     for(int i = 0; i<=256 * 2; i++){
@@ -468,10 +486,10 @@ void control_loop() {
         );
 
     } else if(drive_state == drive_state_position_control){ // Cascaded position -> velocity control
-        float position_error = position_target_rads - position_rads;
+        float position_error = position_rads - fbound(position_target_rads, position_min_rads, position_max_rads);
         float velocity_target = -kPV * position_error;
 
-        float velocity_error = velocity_target - velocity_radsps;
+        float velocity_error = velocity_radsps - fbound_sym(velocity_target, velocity_max_radsps);
         set_torque_setpoint(
             -kV * velocity_error
         );
@@ -489,6 +507,10 @@ void control_loop() {
 
 void set_torque_setpoint(float torque_target_Nm){
     // Bound target torque and convert to target current using motor kT
+    // TODO: Solve this upstream somewhere
+    // if(motor_reversed){
+    // torque_target_Nm = -torque_target_Nm;
+    // }
     set_current_setpoints(0, motor_kT * fbound_sym(torque_target_Nm, torque_max_Nm) * 1000);
 };
 

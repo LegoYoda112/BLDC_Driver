@@ -236,6 +236,7 @@ class FxFDrive:
 
             for i in range(RECV_TIMEOUT):
                 ret = self.can_bus.recv(0.1)
+                # print(ret)
                 if(ret == None):
                     print("Retrying read")
                     break

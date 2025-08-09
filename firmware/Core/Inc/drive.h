@@ -92,6 +92,7 @@ extern int estimated_resistance_mOhms;
 
 extern uint8_t electrical_angle_offset;
 extern int8_t electrical_mechanical_ratio;
+extern bool motor_reversed;
 
 extern int current_Q_setpoint_mA;
 

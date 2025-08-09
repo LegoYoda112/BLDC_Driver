@@ -1,6 +1,8 @@
 #ifndef MEM_H
 #define MEM_H
 #include "main.h"
+#include "config.h"
+#include "stdbool.h"
 
 #define EEPROM_ADDRESS 0xA0
 #define PAGE_SIZE 64

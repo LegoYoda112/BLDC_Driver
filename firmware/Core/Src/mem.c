@@ -111,13 +111,19 @@ uint32_t mem_read_uint32(uint16_t page, uint16_t offset){
 void write_encoder_params(){
     uint8_t data_to_write[1] = {electrical_angle_offset};
 
-    mem_write_uint8(electrical_angle_offset,
-                    PARAM_ENCODER_OFFSET_PAGE,
-                    PARAM_ENCODER_OFFSET_BYTE);
+	#ifdef USE_MEM
+		mem_write_uint8(electrical_angle_offset,
+				PARAM_ENCODER_OFFSET_PAGE,
+				PARAM_ENCODER_OFFSET_BYTE);
+	#endif
 }
 
 void read_encoder_params() {
-    electrical_angle_offset = mem_read_uint8(
-                    PARAM_ENCODER_OFFSET_PAGE,
-                    PARAM_ENCODER_OFFSET_BYTE);
+	#ifdef USE_MEM
+		electrical_angle_offset = mem_read_uint8(
+				PARAM_ENCODER_OFFSET_PAGE,
+				PARAM_ENCODER_OFFSET_BYTE);
+	#else
+		electrical_angle_offset = HARDCODED_ELECTRICAL_ANGLE_OFFSET;
+	#endif
 }

@@ -12,7 +12,7 @@ bool anti_cogging_enabled = false;
 uint16_t maximum_motor_current_mA = 5000;
 
 int current_Q_setpoint_mA = 0;
-int current_D_setpoint_mA = 0;
+int current_D_setpoint_mA = 0; 
 
 int16_t current_A_mA = 0;
 int16_t current_B_mA = 0;
@@ -64,6 +64,7 @@ int encoder_velocity = 0;
 uint8_t electrical_angle = 0;
 uint8_t electrical_angle_offset = 0;
 int8_t electrical_mechanical_ratio = 21;
+bool motor_reversed = false;
 
 void set_current_setpoints(int D_setpoint_mA, int Q_setpoint_mA){
     current_Q_setpoint_mA = Q_setpoint_mA;
@@ -131,7 +132,6 @@ void current_control_loop(){
 
     // Enforce limits on current
     current_Q_setpoint_mA = bound(current_Q_setpoint_mA, -maximum_motor_current_mA, maximum_motor_current_mA);
-
     // Feedforward for anti-cogging
     // if(anti_cogging_enabled){
     //     current_Q_setpoint_mA += current_offsets[electrical_angle] * 1.0f;

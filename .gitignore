@@ -3,6 +3,7 @@ firmware/Drivers/CMSIS
 firmware/Drivers/STM32G4xx_HAL_Driver
 firmware/Middlewares/ST
 firmware/Middlewares/Third_Party/FreeRTOS
+firmware/.cache
 
 bootloader/Drivers/CMSIS
 bootloader/Drivers/STM32G4xx_HAL_Driver
@@ -17,3 +18,4 @@ _doxygen_build
 __pycache__
 
 .vscode
+.DS_Store

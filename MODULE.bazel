@@ -1,0 +1,14 @@
+module(
+    name = "bldc_driver",
+    version = "0.0.1",
+)
+
+bazel_dep(name = "rules_cc", version = "0.2.17")
+bazel_dep(name = "platforms", version = "1.0.0")
+
+register_toolchains("//toolchain:arm_none_eabi_toolchain")
+
+arm_toolchain = use_extension("//toolchain:extensions.bzl", "arm_none_eabi_ext")
+use_repo(arm_toolchain, "arm_none_eabi")
+
+register_toolchains("//toolchain:arm_none_eabi_toolchain")

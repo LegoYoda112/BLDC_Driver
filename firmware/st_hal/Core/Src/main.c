@@ -29,7 +29,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "app_main.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -107,11 +107,7 @@ int main(void)
   MX_RTC_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-
-  HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
-  HAL_TIM_Base_Start(&htim2);
-  uint32_t last_flash = 0;
-  uint32_t flash_delay = 1000000;
+  app_main();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -121,16 +117,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if(TIM2->CNT - last_flash > flash_delay){
-      last_flash = TIM2->CNT;
-
-      // Toggle timer
-      if(TIM15->CCR1 == 100){
-        TIM15->CCR1 = 0;
-      } else {
-        TIM15->CCR1 = 100;
-      }
-    }
+    HAL_Delay(100);
   }
   /* USER CODE END 3 */
 }

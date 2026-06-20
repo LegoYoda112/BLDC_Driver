@@ -2,7 +2,7 @@
 
 using namespace scheduler;
 
-void scheduler::initialize_scheduler(){
+void scheduler::initialize(){
     HAL_TIM_Base_Start(&htim2);
 }
 

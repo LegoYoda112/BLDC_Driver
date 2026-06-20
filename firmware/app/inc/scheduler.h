@@ -13,7 +13,7 @@ namespace scheduler
  * @brief Initializes timers
  * 
  */
-void initialize_scheduler();
+void initialize();
 
 /**
  * @brief Generate 
@@ -42,7 +42,6 @@ class PeriodicTask {
             timer = _timer;
         }
         
-
         /**
          * @brief Call every loop, if the task is due to run, this function will return true
          * 

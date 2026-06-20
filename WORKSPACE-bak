@@ -1,0 +1,8 @@
+# https://github.com/agoessling/bazel_stm32/blob/master/WORKSPACE
+workspace(name = "BLDC_Driver")
+
+# Register the toolchain
+register_toolchains("//toolchain:arm_none_eabi_toolchain")
+
+# Optional: fetch the compiler via http_archive if not relying on system install
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")

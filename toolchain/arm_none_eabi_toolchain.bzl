@@ -6,7 +6,8 @@ load(
     "flag_group",
     "flag_set",
     "tool",
-    "tool_path"
+    "tool_path",
+    "variable_with_value"
 )
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/toolchains:cc_toolchain.bzl", "cc_toolchain")
@@ -128,6 +129,42 @@ def _arm_none_eabi_toolchain_config_impl(ctx):
     ]
 
     features = [
+        feature(
+            name = "archiver_flags",
+            enabled = True,
+            flag_sets = [
+                flag_set(
+                    actions = [ACTION_NAMES.cpp_link_static_library],
+                    flag_groups = [
+                        flag_group(
+                            flags = ["rcsD"],
+                        ),
+                        flag_group(
+                            flags = ["%{output_execpath}"],
+                            expand_if_available = "output_execpath",
+                        ),
+                    ],
+                ),
+                flag_set(
+                    actions = [ACTION_NAMES.cpp_link_static_library],
+                    flag_groups = [
+                        flag_group(
+                            iterate_over = "libraries_to_link",
+                            flag_groups = [
+                                flag_group(
+                                    flags = ["%{libraries_to_link.name}"],
+                                    expand_if_equal = variable_with_value(
+                                        name = "libraries_to_link.type",
+                                        value = "object_file",
+                                    ),
+                                ),
+                            ],
+                            expand_if_available = "libraries_to_link",
+                        ),
+                    ],
+                ),
+            ],
+        ),
         feature(
             name = "default_complie_flags",
             enabled = True,

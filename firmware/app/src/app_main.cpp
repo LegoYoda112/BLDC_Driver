@@ -30,10 +30,12 @@ void app_main(void){
 
   // Enable low side and zero phases
   drive::enable_low_side();
-  drive::set_phaseA_duty(0);
-  drive::set_phaseB_duty(0);
-  drive::set_phaseC_duty(0);
 
+  struct drive::PhaseVoltages motor_voltage;
+  motor_voltage.phaseA_V = 2.0;
+  motor_voltage.phaseB_V = 4.0;
+  motor_voltage.phaseC_V = 6.0;
+  drive::set_target_phase_voltages(&motor_voltage);
 
   scheduler::PeriodicTask blink_task(&htim2);
   blink_task.period_us = scheduler::period_from_hertz(60);
@@ -41,17 +43,24 @@ void app_main(void){
   scheduler::PeriodicTask print_task(&htim2);
   print_task.period_us = scheduler::period_from_hertz(50);
 
+  scheduler::PeriodicTask analog_update_task(&htim2);
+  analog_update_task.period_us = scheduler::period_from_hertz(1000);
+
 
   char print_buffer[100];
 
   while(true) {
     if(print_task.tick()){
-      sprintf(print_buffer, "Encoder angle %d %d %d\r\n", 
-        encoder::get_raw(),
-        encoder::get_index_read(),
-        count
+      sprintf(print_buffer, "%.2f\r\n", 
+        analog::get_cached_bus_voltage_v()
       );
       CDC_Transmit_FS((uint8_t*) print_buffer, strlen(print_buffer));
+    }
+    
+    // Compute all non-current analog values
+    if(analog_update_task.tick()){
+      // TODO: Add temps
+      analog::read_bus_voltage_v();
     }
 
 

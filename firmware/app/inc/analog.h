@@ -20,11 +20,19 @@ void initialize();
 
 
 /**
- * @brief Get the current bus voltage
+ * @brief Read the current bus voltage
  * 
  * @return Voltage in volts 
  */
-float get_bus_voltage_v();
+float read_bus_voltage_v();
+
+/**
+ * @brief Gets the cached bus voltage from the last read
+ * 
+ *
+ */
+float get_cached_bus_voltage_v();
+
 
 /**
  * @brief Calibrate DRV current sense amps

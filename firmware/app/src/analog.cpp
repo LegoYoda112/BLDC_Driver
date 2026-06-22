@@ -7,6 +7,7 @@ uint16_t adc2_dma[3];
 uint16_t adc2_dma_offset_measure[3];
 uint16_t adc2_dma_offset[3];
 float current_sense[3];
+float cached_bus_voltage_v;
 
 bool zero_current_sense = false;
 
@@ -20,8 +21,13 @@ void analog::initialize(){
     analog::calibrate_current_sense();
 }
 
-float analog::get_bus_voltage_v(){
-    return adc1_dma[0] * (0.000806f / 0.0637f) * 1.006f;
+float analog::read_bus_voltage_v(){
+    cached_bus_voltage_v = adc1_dma[0] * (0.000806f / 0.0637f) * 1.006f;
+    return cached_bus_voltage_v;
+}
+
+float analog::get_cached_bus_voltage_v(){
+    return cached_bus_voltage_v;
 }
 
 void analog::calibrate_current_sense(){

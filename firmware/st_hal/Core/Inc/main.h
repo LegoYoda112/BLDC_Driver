@@ -78,6 +78,7 @@ void Error_Handler(void);
 #define IFA_EXTI_IRQn EXTI1_IRQn
 #define IFB_Pin GPIO_PIN_2
 #define IFB_GPIO_Port GPIOB
+#define IFB_EXTI_IRQn EXTI2_IRQn
 #define DRV_NFAULT_Pin GPIO_PIN_13
 #define DRV_NFAULT_GPIO_Port GPIOB
 #define DRV_EN_Pin GPIO_PIN_14
@@ -94,6 +95,7 @@ void Error_Handler(void);
 #define INHA_GPIO_Port GPIOA
 #define IFC_Pin GPIO_PIN_5
 #define IFC_GPIO_Port GPIOB
+#define IFC_EXTI_IRQn EXTI9_5_IRQn
 
 /* USER CODE BEGIN Private defines */
 

@@ -12,6 +12,7 @@
 #include "analog.h"
 #include "drive.h"
 #include "encoder.h"
+#include "led.h"
 
 
 // struct ControllerTarget target;
@@ -20,20 +21,22 @@ int count = 0;
 void app_main(void){
   HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
 
+  // Initialize all sub-modules
   scheduler::initialize();
+  encoder::initialize();
   drive::initialize();
-
   analog::initialize();
+  led::initialize();
 
-
+  // Enable low side and zero phases
   drive::enable_low_side();
-  drive::set_phaseA_duty(500);
-  drive::set_phaseB_duty(500);
-  drive::set_phaseC_duty(500);
+  drive::set_phaseA_duty(0);
+  drive::set_phaseB_duty(0);
+  drive::set_phaseC_duty(0);
 
 
   scheduler::PeriodicTask blink_task(&htim2);
-  blink_task.period_us = scheduler::period_from_hertz(1);
+  blink_task.period_us = scheduler::period_from_hertz(60);
 
   scheduler::PeriodicTask print_task(&htim2);
   print_task.period_us = scheduler::period_from_hertz(50);
@@ -43,22 +46,19 @@ void app_main(void){
 
   while(true) {
     if(print_task.tick()){
-      sprintf(print_buffer, "Encoder angle %d %d\r\n", 
+      sprintf(print_buffer, "Encoder angle %d %d %d\r\n", 
         encoder::get_raw(),
-        encoder::get_index_read());
-      // sprintf(print_buffer, "commutation count %d\r\n", count);
-      count = 0;
+        encoder::get_index_read(),
+        count
+      );
       CDC_Transmit_FS((uint8_t*) print_buffer, strlen(print_buffer));
     }
 
 
     if(blink_task.tick()){
       // Toggle timer
-      if(TIM15->CCR1 == 100){
-        TIM15->CCR1 = 0;
-      } else {
-        TIM15->CCR1 = 100;
-      }
+      led::set_hsv(count / 10.0f, 1.0f, 1.0f);
+      count += 1;
     }
   }
 }
@@ -66,13 +66,12 @@ void app_main(void){
 void tim_elapsed_callback(TIM_HandleTypeDef *htim) {
   if(htim->Instance == TIM6) {
     drive::commutation_interrupt();
-    count += 1;
   }
 }
 
 void gpio_interrupt_callback(uint16_t pin){
-  if(pin == IFA_Pin){
-    encoder::interrupt();
+  if(pin == IFA_Pin || pin == IFB_Pin){
+    encoder::interrupt(pin);
   } else if(pin == IFC_Pin) {
     encoder::index_interrupt();
   }

@@ -5,10 +5,11 @@ namespace encoder
 {
 
 void initialize();
-void interrupt();
+void interrupt(uint16_t);
 void index_interrupt();
 
 int get_raw();
 bool get_index_read();
+uint8_t get_enc_val();
 
 } // encoder

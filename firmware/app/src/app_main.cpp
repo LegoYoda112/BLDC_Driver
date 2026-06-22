@@ -11,6 +11,7 @@
 #include "scheduler.h"
 #include "analog.h"
 #include "drive.h"
+#include "encoder.h"
 
 
 // struct ControllerTarget target;
@@ -42,9 +43,9 @@ void app_main(void){
 
   while(true) {
     if(print_task.tick()){
-      sprintf(print_buffer, "Phase currents: %.2f, %.2f\r\n", 
-        analog::get_phase_A_current_mA(),
-        analog::get_phase_B_current_mA());
+      sprintf(print_buffer, "Encoder angle %d %d\r\n", 
+        encoder::get_raw(),
+        encoder::get_index_read());
       // sprintf(print_buffer, "commutation count %d\r\n", count);
       count = 0;
       CDC_Transmit_FS((uint8_t*) print_buffer, strlen(print_buffer));
@@ -58,8 +59,6 @@ void app_main(void){
       } else {
         TIM15->CCR1 = 100;
       }
-
-      // CDC_Transmit_FS((uint8_t *) "led task\r\n", 12);
     }
   }
 }
@@ -70,3 +69,11 @@ void tim_elapsed_callback(TIM_HandleTypeDef *htim) {
     count += 1;
   }
 }
+
+void gpio_interrupt_callback(uint16_t pin){
+  if(pin == IFA_Pin){
+    encoder::interrupt();
+  } else if(pin == IFC_Pin) {
+    encoder::index_interrupt();
+  }
+};

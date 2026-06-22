@@ -92,6 +92,8 @@ void Error_Handler(void);
 #define INHB_GPIO_Port GPIOA
 #define INHA_Pin GPIO_PIN_10
 #define INHA_GPIO_Port GPIOA
+#define IFC_Pin GPIO_PIN_5
+#define IFC_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

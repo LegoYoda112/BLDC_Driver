@@ -21,7 +21,6 @@
 #include "adc.h"
 #include "dma.h"
 #include "fdcan.h"
-#include "i2c.h"
 #include "rtc.h"
 #include "tim.h"
 #include "usb_device.h"
@@ -97,7 +96,6 @@ int main(void)
   MX_ADC1_Init();
   MX_ADC2_Init();
   MX_TIM1_Init();
-  MX_I2C1_Init();
   MX_USB_Device_Init();
   MX_TIM3_Init();
   MX_TIM15_Init();
@@ -117,7 +115,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_Delay(100);
   }
   /* USER CODE END 3 */
 }
@@ -172,7 +169,9 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_GPIO_EXTI_Callback(uint16_t pin){
+  gpio_interrupt_callback(pin);
+}
 /* USER CODE END 4 */
 
 /**

@@ -68,11 +68,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : IFA_Pin */
-  GPIO_InitStruct.Pin = IFA_Pin;
+  /*Configure GPIO pins : IFA_Pin IFC_Pin */
+  GPIO_InitStruct.Pin = IFA_Pin|IFC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(IFA_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : IFB_Pin DRV_NFAULT_Pin */
   GPIO_InitStruct.Pin = IFB_Pin|DRV_NFAULT_Pin;

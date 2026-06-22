@@ -10,6 +10,7 @@ extern "C" {
 
 void app_main(void);
 void tim_elapsed_callback(TIM_HandleTypeDef*);
+void gpio_interrupt_callback(uint16_t pin);
 
 #ifdef __cplusplus
 }

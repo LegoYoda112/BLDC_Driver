@@ -5,6 +5,7 @@
 #include "analog.h"
 
 #define PHASE_DUTY_MAX 1024.0f
+#define MAX_VOLTAGE 2.0f
 
 namespace drive
 {

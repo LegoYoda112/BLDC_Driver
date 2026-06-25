@@ -1,4 +1,5 @@
 #include "drive.h"
+#include "utils.h"
 
 using namespace drive;
 
@@ -59,16 +60,15 @@ void drive::apply_phase_voltages(struct drive::PhaseVoltages* voltage){
     float voltage_to_duty = PHASE_DUTY_MAX / analog::get_cached_bus_voltage_v();
 
     apply_phase_duties(
-        voltage->phaseA_V * voltage_to_duty,
-        voltage->phaseB_V * voltage_to_duty,
-        voltage->phaseC_V * voltage_to_duty
+        PHASE_DUTY_MAX / 2.0f + utils::fbound_sym(voltage->phaseA_V, MAX_VOLTAGE) * voltage_to_duty,
+        PHASE_DUTY_MAX / 2.0f + utils::fbound_sym(voltage->phaseB_V, MAX_VOLTAGE) * voltage_to_duty,
+        PHASE_DUTY_MAX / 2.0f + utils::fbound_sym(voltage->phaseC_V, MAX_VOLTAGE) * voltage_to_duty
     );
 }
 
 
 void drive::commutation_interrupt(){
-
-    // TODO: Clip phase voltages
-    drive::apply_phase_voltages(&phase_voltages);
     analog::update_current_sense();
+
+    drive::apply_phase_voltages(&phase_voltages);
 }

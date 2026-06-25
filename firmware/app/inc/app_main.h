@@ -1,5 +1,4 @@
-#ifndef APP_MAIN_H
-#define APP_MAIN_H
+#pragma once
 
 
 #include "tim.h"
@@ -11,9 +10,8 @@ extern "C" {
 void app_main(void);
 void tim_elapsed_callback(TIM_HandleTypeDef*);
 void gpio_interrupt_callback(uint16_t pin);
+void usb_callback(uint8_t*, uint32_t);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif // APP_MAIN_H

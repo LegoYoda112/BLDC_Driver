@@ -5,6 +5,7 @@
 // ST HAL includes
 #include "stm32g4xx_hal.h"
 #include "tim.h"
+#include "fdcan.h"
 #include "usbd_cdc_if.h"
 // Custom lib includes
 #include "structs.h"
@@ -13,35 +14,45 @@
 #include "drive.h"
 #include "encoder.h"
 #include "led.h"
+#include "trig.h"
+#include "foc.h"
+#include "uid_hash.h"
+#include "comms.h"
 
 
 // struct ControllerTarget target;
 int count = 0;
+int angle = 0;
+
+#define CDC_RX_BUFFER_SIZE 128
+uint8_t cdcRxBuffer[CDC_RX_BUFFER_SIZE];
+uint32_t cdcRxBufferIndex = 0;
 
 void app_main(void){
+  CDC_RegisterRxCallback(usb_callback);
+
   HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
 
   // Initialize all sub-modules
   scheduler::initialize();
+  uid_hash::initialize();
+  trig::initialize();
   encoder::initialize();
   drive::initialize();
   analog::initialize();
   led::initialize();
+  comms::initialize(&hfdcan1);
 
   // Enable low side and zero phases
+  drive::apply_phase_duties(512, 512, 512);
+  HAL_Delay(10);
   drive::enable_low_side();
-
-  struct drive::PhaseVoltages motor_voltage;
-  motor_voltage.phaseA_V = 2.0;
-  motor_voltage.phaseB_V = 4.0;
-  motor_voltage.phaseC_V = 6.0;
-  drive::set_target_phase_voltages(&motor_voltage);
 
   scheduler::PeriodicTask blink_task(&htim2);
   blink_task.period_us = scheduler::period_from_hertz(60);
 
   scheduler::PeriodicTask print_task(&htim2);
-  print_task.period_us = scheduler::period_from_hertz(50);
+  print_task.period_us = scheduler::period_from_hertz(1000);
 
   scheduler::PeriodicTask analog_update_task(&htim2);
   analog_update_task.period_us = scheduler::period_from_hertz(1000);
@@ -51,10 +62,18 @@ void app_main(void){
 
   while(true) {
     if(print_task.tick()){
-      sprintf(print_buffer, "%.2f\r\n", 
-        analog::get_cached_bus_voltage_v()
-      );
-      CDC_Transmit_FS((uint8_t*) print_buffer, strlen(print_buffer));
+      struct drive::PhaseVoltages motor_voltage;
+      foc::make_voltage_at_electrical_angle(500, 0, angle, &motor_voltage);
+      drive::set_target_phase_voltages(&motor_voltage);
+  
+      // sprintf(print_buffer, "%.3f V %.3f V %.3f V\r\n", 
+      //   motor_voltage.phaseA_V,
+      //   motor_voltage.phaseB_V,
+      //   motor_voltage.phaseC_V
+      // );
+      // CDC_Transmit_FS((uint8_t*) print_buffer, strlen(print_buffer));
+
+      angle += 8;
     }
     
     // Compute all non-current analog values
@@ -85,3 +104,18 @@ void gpio_interrupt_callback(uint16_t pin){
     encoder::index_interrupt();
   }
 };
+
+void usb_callback(uint8_t *Buf, uint32_t Len){
+  for (int i = 0; i < Len; i++) {
+    // Check for buffer overflow
+    if (cdcRxBufferIndex < CDC_RX_BUFFER_SIZE) {
+        cdcRxBuffer[cdcRxBufferIndex++] = Buf[i];
+    }
+
+    if(Buf[i] == '\r'){
+      // Handle new command
+      comms::slcan_usb_rx(cdcRxBuffer, cdcRxBufferIndex);
+      cdcRxBufferIndex = 0;
+    }
+  }
+}

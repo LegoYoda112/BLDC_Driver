@@ -15,12 +15,37 @@ inline void put_u8(std::vector<std::uint8_t>&buf, uint8_t v){
     buf.push_back(v);
 }
 
+inline void put_i8(std::vector<std::uint8_t>&buf, int8_t v){
+    buf.push_back(static_cast<uint8_t>(v));
+}
+
+inline void put_u16(std::vector<std::uint8_t>&buf, uint16_t v){
+    buf.push_back(static_cast<uint8_t>(v & 0xFF));
+    buf.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
+}
+
+inline void put_i16(std::vector<std::uint8_t>&buf, int16_t v){
+    buf.push_back(static_cast<uint8_t>(v & 0xFF));
+    buf.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
+}
+
 struct Reader {
     const uint8_t* data;
     size_t len;
     size_t pos = 0;
 
     uint8_t u8(){ return data[pos++]; }
+    int8_t i8(){ return data[pos++]; }
+    uint16_t u16() { 
+        uint16_t v = static_cast<uint16_t>(data[pos] | data[pos + 1] << 8);
+        pos += 2;
+        return v;
+    }
+    int16_t i16() { 
+        int16_t v = static_cast<int16_t>(data[pos] | data[pos + 1] << 8);
+        pos += 2;
+        return v;
+    }
 };
 
 
@@ -96,25 +121,90 @@ private:
     std::function<void(const uint8_t*, size_t)> tx_fn_;
 };
 
-struct TestFrame {
-    uint8_t value_1;
-    uint8_t value_2;
-
-    static std::vector<uint8_t> encode(const struct TestFrame& f){
+struct StateChange {
+    uint8_t new_state;
+    uint8_t old_state;
+    static std::vector<uint8_t> encode(const struct StateChange& f){
         std::vector<uint8_t> buf;
-        ipc::put_u8(buf, f.value_1);
-        ipc::put_u8(buf, f.value_2);
-
+        ipc::put_u8(buf, f.new_state);
+        ipc::put_u8(buf, f.old_state);
         return buf;
     }
 
-    static TestFrame decode(const uint8_t* data, size_t length){
+    static StateChange decode(const uint8_t* data, size_t length){
         ipc::Reader r{data, length};
-        TestFrame frame{};
-        frame.value_1 = r.u8();
-        frame.value_2 = r.u8();
+        StateChange frame{};
+        frame.new_state = r.u8();
+        frame.old_state = r.u8();
         return frame;
     }
 };
+
+struct ControllerGains {
+    uint16_t kP_mNm;
+    uint16_t kD_mNm;
+
+    static std::vector<uint8_t> encode(const struct ControllerGains& f){
+        std::vector<uint8_t> buf;
+        ipc::put_u16(buf, f.kP_mNm);
+        ipc::put_u16(buf, f.kD_mNm);
+        return buf;
+    }
+
+    static ControllerGains decode(const uint8_t* data, size_t length){
+        ipc::Reader r{data, length};
+        ControllerGains frame{};
+        frame.kP_mNm = r.u16();
+        frame.kD_mNm = r.u16();
+        return frame;
+    }
+};
+
+struct ControllerSetpoint {
+    int16_t position_target_mRads;
+    int16_t torque_feedforward_mNm;
+
+    static std::vector<uint8_t> encode(const struct ControllerSetpoint& f){
+        std::vector<uint8_t> buf;
+        ipc::put_i16(buf, f.position_target_mRads);
+        ipc::put_i16(buf, f.torque_feedforward_mNm);
+        return buf;
+    }
+
+    static ControllerSetpoint decode(const uint8_t* data, size_t length){
+        ipc::Reader r{data, length};
+        ControllerSetpoint frame{};
+        frame.position_target_mRads = r.i16();
+        frame.torque_feedforward_mNm = r.i16();
+        return frame;
+    }
+};
+
+struct ControllerFeedback {
+    int16_t position_mRads;
+    int16_t velocity_mRads;
+    int16_t torque_mNm;
+    uint8_t drive_temp_C;
+
+    static std::vector<uint8_t> encode(const struct ControllerFeedback& f){
+        std::vector<uint8_t> buf;
+        ipc::put_i16(buf, f.position_mRads);
+        ipc::put_i16(buf, f.velocity_mRads);
+        ipc::put_i16(buf, f.torque_mNm);
+        ipc::put_u8(buf, f.drive_temp_C);
+        return buf;
+    }
+
+    static ControllerFeedback decode(const uint8_t* data, size_t length){
+        ipc::Reader r{data, length};
+        ControllerFeedback frame{};
+        frame.position_mRads = r.i16();
+        frame.velocity_mRads = r.i16();
+        frame.torque_mNm = r.i16();
+        frame.drive_temp_C = r.u8();
+        return frame;
+    }
+};
+
 
 } // IPC

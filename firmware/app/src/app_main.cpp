@@ -41,13 +41,15 @@ void app_main(void){
 
   ipc::IPCRouter router(tx_fn);
 
-  router.register_hook<ipc::TestFrame>(0x01, "test_frame", [&router](const ipc::TestFrame& f){
-    ipc::TestFrame f_{10, 20};
-    router.send(0x01, ipc::TestFrame::encode(f_));
+  router.register_hook<ipc::ControllerSetpoint>(0x05, "controller_setpoint", [&router](const ipc::ControllerSetpoint& f){
+    ipc::ControllerSetpoint f_{10, 20};
+    router.send(0x01, ipc::ControllerSetpoint::encode(f_));
   });
 
-  uint8_t data[3] = {0x01, 1, 2};
-  router.on_can_frame(data, (size_t) 3);
+  ipc::ControllerSetpoint setpoint{100, -200};
+  std::vector<uint8_t> buf = ipc::ControllerSetpoint::encode(setpoint);
+  buf.insert(buf.begin(), 0x5);
+  router.on_can_frame(buf.data(), buf.size());
 
   // Initialize all sub-modules
   scheduler::initialize();

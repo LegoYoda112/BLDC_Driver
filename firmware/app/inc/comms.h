@@ -4,9 +4,11 @@
 #include "main.h"
 #include "fdcan.h"
 #include "usbd_cdc_if.h"
+#include <string>
 
 namespace comms
 {
+
 
 void initialize(FDCAN_HandleTypeDef*);
 
@@ -20,5 +22,7 @@ void send_slcan_string(FDCAN_RxHeaderTypeDef, uint8_t*);
 void slcan_usb_rx(uint8_t*, uint32_t);
 
 FDCAN_RxHeaderTypeDef convert_tx_header(FDCAN_TxHeaderTypeDef*);
+
+
 
 };

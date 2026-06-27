@@ -18,6 +18,7 @@
 #include "foc.h"
 #include "uid_hash.h"
 #include "comms.h"
+#include "ipc.h"
 
 
 // struct ControllerTarget target;
@@ -28,10 +29,25 @@ int angle = 0;
 uint8_t cdcRxBuffer[CDC_RX_BUFFER_SIZE];
 uint32_t cdcRxBufferIndex = 0;
 
+void tx_fn(const uint8_t* data, size_t len){
+  volatile int x = 1;
+  return;
+}
+
 void app_main(void){
   CDC_RegisterRxCallback(usb_callback);
 
   HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
+
+  ipc::IPCRouter router(tx_fn);
+
+  router.register_hook<ipc::TestFrame>(0x01, "test_frame", [&router](const ipc::TestFrame& f){
+    ipc::TestFrame f_{10, 20};
+    router.send(0x01, ipc::TestFrame::encode(f_));
+  });
+
+  uint8_t data[3] = {0x01, 1, 2};
+  router.on_can_frame(data, (size_t) 3);
 
   // Initialize all sub-modules
   scheduler::initialize();

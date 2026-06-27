@@ -1,6 +1,8 @@
 #pragma once
 #include "stm32g4xx_hal.h"
 #include "adc.h"
+#include "comms.h"
+#include "drive.h"
 
 #define CURRENT_FILTER_CONSTANT 0.95f
 #define ZERO_FILTER_CONSTANT 0.9f

@@ -66,7 +66,6 @@ void drive::apply_phase_voltages(struct drive::PhaseVoltages* voltage){
     );
 }
 
-
 void drive::commutation_interrupt(){
     analog::update_current_sense();
 

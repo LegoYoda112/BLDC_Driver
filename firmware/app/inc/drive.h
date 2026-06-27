@@ -27,15 +27,27 @@ struct PhaseVoltages {
     float phaseC_V;
 };
 
+struct PhaseVoltages_mV16 {
+    int16_t phaseA_mV;
+    int16_t phaseB_mV;
+    int16_t phaseC_mV;
+};
+
 struct PhaseCurrents {
     float phaseA_mA;
     float phaseB_mA;
     float phaseC_mA;
 };
 
+struct PhaseCurrents_mA16 {
+    int16_t phaseA_mA;
+    int16_t phaseB_mA;
+    int16_t phaseC_mA;
+};
+
+
 void set_target_phase_voltages(struct drive::PhaseVoltages* target_voltages);
 void apply_phase_voltages(PhaseVoltages*);
-
 
 
 void commutation_interrupt();
